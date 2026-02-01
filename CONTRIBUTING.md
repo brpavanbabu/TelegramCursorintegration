@@ -33,7 +33,7 @@ Feature requests are welcome! Please:
 
 ```bash
 # Clone your fork
-git clone https://github.com/yourusername/telegram-cursor-integration.git
+git clone https://github.com/brpavanbabu/telegram-cursor-integration.git
 cd telegram-cursor-integration
 
 # Install dependencies

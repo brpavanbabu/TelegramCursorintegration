@@ -28,7 +28,7 @@ This bot includes **password protection** to keep you safe:
 ## 🚀 Quick Install (One Command!)
 
 ```bash
-git clone https://github.com/yourusername/telegram-cursor-integration.git
+git clone https://github.com/brpavanbabu/telegram-cursor-integration.git
 cd telegram-cursor-integration
 node install.js
 ```
@@ -189,7 +189,7 @@ npm install --force
 ```
 
 ### Still having issues?
-- Check [GitHub Issues](https://github.com/yourusername/telegram-cursor-integration/issues)
+- Check [GitHub Issues](https://github.com/brpavanbabu/telegram-cursor-integration/issues)
 - Create a new issue with details
 
 ## 🎯 Real-World Examples
@@ -262,8 +262,8 @@ This bot solves a real problem: **securely controlling your IDE from anywhere**.
 ## 💬 Support
 
 - 🔒 [Security Documentation](SECURITY.md)
-- 🐛 [Report a Bug](https://github.com/yourusername/telegram-cursor-integration/issues)
-- 💡 [Request a Feature](https://github.com/yourusername/telegram-cursor-integration/issues)
+- 🐛 [Report a Bug](https://github.com/brpavanbabu/telegram-cursor-integration/issues)
+- 💡 [Request a Feature](https://github.com/brpavanbabu/telegram-cursor-integration/issues)
 - ⭐ Star this repo if you find it useful!
 
 ---

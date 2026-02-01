@@ -22,12 +22,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/telegram-cursor-integration.git"
+    "url": "https://github.com/brpavanbabu/telegram-cursor-integration.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/telegram-cursor-integration/issues"
+    "url": "https://github.com/brpavanbabu/telegram-cursor-integration/issues"
   },
-  "homepage": "https://github.com/yourusername/telegram-cursor-integration#readme",
+  "homepage": "https://github.com/brpavanbabu/telegram-cursor-integration#readme",
   "dependencies": {
     "node-telegram-bot-api": "^0.66.0",
     "robotjs": "^0.6.0"

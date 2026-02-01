@@ -8,7 +8,7 @@ Get up and running in **2 MINUTES** with **ONE COMMAND**!
 
 ```bash
 # 1. Clone
-git clone https://github.com/yourusername/telegram-cursor-integration.git
+git clone https://github.com/brpavanbabu/telegram-cursor-integration.git
 cd telegram-cursor-integration
 
 # 2. Install & Run (does EVERYTHING automatically)
@@ -159,6 +159,6 @@ Created by **Pavan Babu** with ❤️
 
 ---
 
-**Need help?** [Open an issue](https://github.com/yourusername/telegram-cursor-integration/issues)
+**Need help?** [Open an issue](https://github.com/brpavanbabu/telegram-cursor-integration/issues)
 
 **Love it?** ⭐ Star the repo!

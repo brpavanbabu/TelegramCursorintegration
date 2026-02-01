@@ -11,7 +11,7 @@
  * - Real-time status updates
  * - File change tracking
  * 
- * GitHub: https://github.com/yourusername/telegram-cursor-integration
+ * GitHub: https://github.com/brpavanbabu/telegram-cursor-integration
  * License: MIT
  */
 
@@ -449,7 +449,7 @@ bot.onText(/\/help/, async (msg) => {
         `/clear - Clear conversation context\n` +
         `/logout - Logout (require password again)\n` +
         `/help - This help message\n\n` +
-        `*GitHub:* https://github.com/yourusername/telegram-cursor-integration`,
+        `*GitHub:* https://github.com/brpavanbabu/telegram-cursor-integration`,
         { parse_mode: 'Markdown' }
     );
 });
