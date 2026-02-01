@@ -1,0 +1,278 @@
+# Telegram + Cursor Integration - Git Ignore
+# Created by: Pavan Babu
+
+# ============================================================
+# Configuration files (contains sensitive bot tokens)
+# ============================================================
+config.json
+
+# ============================================================
+# Node.js Dependencies
+# ============================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ============================================================
+# Logs
+# ============================================================
+logs/
+*.log
+debug.log
+telegram-commands.log
+telegram-command-history.txt
+
+# ============================================================
+# Temporary & Generated Files
+# ============================================================
+*.tmp
+*.temp
+execute-cursor-temp.ps1
+start-bot-temp.ps1
+.cursor-command.txt
+.cursor-agent-command.txt
+TELEGRAM-COMMAND.txt
+telegram-latest-command.txt
+telegram-execution-result.txt
+telegram-output.txt
+
+# ============================================================
+# OS Files
+# ============================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# ============================================================
+# IDE Files
+# ============================================================
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ============================================================
+# Execution & Status Tracking
+# ============================================================
+execution.json
+status.json
+command-logs/
+result-logs/
+sessions/
+*.session
+
+# ============================================================
+# Environment Files
+# ============================================================
+.env
+.env.local
+.env.*.local
+
+# ============================================================
+# Python (if any Python helpers exist)
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ============================================================
+# Project-Specific Excludes
+# ============================================================
+
+# Old/Alternative Implementations (not needed in clean version)
+telegram-with-memory.js
+telegram-execute-integration.js
+telegram-moltbot-cursor-integration.js
+telegram-hybrid-cursor-ollama.js
+telegram-auto-executor.js
+telegram-cursor-agent.js
+telegram-cursor-direct.js
+telegram-to-cursor-bridge.js
+telegram-app-control.js
+telegram-auto-build.js
+telegram-bot-*.js
+telegram-chat-integration.js
+telegram-command-*.js
+telegram-cursor-agent-automation.js
+
+# Helper modules integrated into main bot
+password-security.js
+command-detector.js
+cursor-direct-execute.js
+track-execution-status.js
+vercel-deploy.js
+permission-handler.js
+execute-direct.js
+
+# Old setup/config scripts
+execute-now.ps1
+send-to-cursor.ps1
+setup-*.ps1
+configure-*.ps1
+fix-*.ps1
+auto-*.ps1
+test-*.ps1
+check-*.ps1
+START_*.ps1
+start-telegram-integration.ps1
+
+# Flight tracking project (separate project, not part of telegram-cursor)
+flight-*.*
+find_*.py
+moltbot-*.*
+real_prices.py
+flight-data.js
+hybrid-flight-tracker.ps1
+multi-city-*.ps1
+get-*.ps1
+schedule-*.ps1
+*flight*.txt
+*flight*.json
+bangalore-*.txt
+switzerland-*.txt
+cheapest-*.json
+*prices*.json
+*prices*.txt
+comprehensive-search-*.json
+fast-search-*.json
+flights-by-*.json
+july*.txt
+mid-*.txt
+
+# YouTube automation project (separate project)
+youtube_content_app.py
+youtube-*.ps1
+youtube-*.txt
+
+# Browser/Playwright automation (separate project)
+auto-connect-extension.ps1
+keep-browser-alive.ps1
+load-extension-*.ps1
+setup-moltbot-browser.ps1
+test-moltbot-browser.ps1
+install-playwright-scraper.ps1
+
+# Website/API projects (separate)
+index.html
+update_website.py
+update-website-*.ps1
+api/
+vercel.json
+
+# Test/Sample Python apps
+add_numbers.py
+test_add_numbers.py
+requirements.txt
+
+# Documentation for other projects (not telegram-cursor specific)
+AUTOMATION_*.md
+MOLTBOT_*.md
+FLIGHT_*.md
+BROWSER_*.md
+DEPLOYMENT_GUIDE.md
+WHATSAPP_AGENT_SETUP.md
+OLLAMA_*.md
+KIMI_*.md
+API_SETUP_GUIDE.md
+OPENAI_API_*.md
+HYBRID_*.md
+ULTIMATE_*.md
+VERSION_COMPARISON.md
+SETUP_COMPLETE.md
+FINAL_STATUS.md
+TELEGRAM_INTEGRATION_FIX.md
+TELEGRAM_AUTO_BUILD.md
+TELEGRAM_TO_CURSOR_GUIDE.md
+STATUS_TRACKING_READY.md
+HYBRID_SOLUTION_READY.md
+CONFIG_FIX_NEEDED.md
+FIX_*.md
+CHECK_*.md
+COMPLETE_SOLUTION.md
+PROGRESS_STATUS.md
+PERSONAL_USE_GUIDE.md
+QUICK_DEPLOY.md
+QUICK_REFERENCE.md
+QUICK_SETUP_ALL_AI.md
+QUICK_START_TELEGRAM.md
+START_*.md
+INSTALL_*.md
+LOAD_*.md
+LIVE_*.md
+MEMORY_SYSTEM_EXPLAINED.md
+WHY_*.md
+WHERE_*.md
+WHERE_ARE_MY_FILES.md
+EXPLANATION.md
+TEST_RESULTS.md
+WEBSITE_DEPLOYED.md
+SCRAPER_*.md
+GITHUB_SETUP.md
+GITHUB_READY.md
+TELEGRAM_CURSOR_COMMANDS.md
+TELEGRAM_TELEGRAM_QUICK_GUIDE.md
+README_YOUTUBE_APP.md
+ADD_API_KEYS.md
+AUTOMATION_READY.md
+AUTOMATION_COMPLETE.md
+MOLTBOT_AUTOMATION_COMPLETE.md
+WHY_CTRL_K_AND_SOLUTION.md
+
+# Snapshot/test files
+snapshot*.txt
+test-*.txt
+google-flights-*.txt
+flight-report-*.txt
+flight-page.txt
+flight-info.txt
+flight-price-history.txt
+flight-snapshot.txt
+browser-*.txt
+*-snapshot.txt
+live-prices-*.txt
+
+# Other temporary/test files
+telegram-manual-commands.ps1
+daily-scraper-*.ps1
+run-moltbot-*.ps1
+status-report.ps1
+show-status.ps1
+watch-*.ps1
+test-gpu-agent.ps1
+test-integration.ps1
+test-openai-key.ps1
+test-telegram-*.ps1
+test-telegram-connection.js
+
+# Config backups
+*-backup.json
+moltbot-config-backup.json
+ollama-config.json
+
+# Recommender scripts
+youtube-recommender*.ps1
+youtube-recommender*.txt

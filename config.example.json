@@ -1,0 +1,6 @@
+{
+  "telegramBotToken": "YOUR_TELEGRAM_BOT_TOKEN_HERE",
+  "workspacePath": "C:\\Users\\YourName\\YourProjects",
+  "password": "YourSecurePassword123",
+  "_comment": "Get your bot token from @BotFather on Telegram. Set a strong password to protect from attackers. Update workspacePath to your actual project directory."
+}

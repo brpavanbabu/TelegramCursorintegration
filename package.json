@@ -1,0 +1,38 @@
+{
+  "name": "telegram-cursor-integration",
+  "version": "1.0.0",
+  "description": "Control Cursor IDE from Telegram with full context preservation and automated execution",
+  "main": "telegram-cursor-bot.js",
+  "scripts": {
+    "start": "node telegram-cursor-bot.js",
+    "install-bot": "node install.js",
+    "setup": "node setup.js",
+    "test": "echo \"No tests specified yet\" && exit 0"
+  },
+  "keywords": [
+    "telegram",
+    "cursor",
+    "ide",
+    "automation",
+    "bot",
+    "ai",
+    "integration"
+  ],
+  "author": "Pavan Babu",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/telegram-cursor-integration.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/telegram-cursor-integration/issues"
+  },
+  "homepage": "https://github.com/yourusername/telegram-cursor-integration#readme",
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0",
+    "robotjs": "^0.6.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
