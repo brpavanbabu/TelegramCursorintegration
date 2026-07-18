@@ -73,6 +73,11 @@ class Agent {
         this.logger = options.logger || null;
         this.metrics = options.metrics || null;
         this.maxSteps = options.maxSteps || 8;
+        // Loop-level deadline: hard wall-clock cap per task, independent of
+        // step count, so slow tool calls cannot stretch a run indefinitely.
+        this.maxDurationMs = options.maxDurationMs || 20 * 60 * 1000;
+        // Adaptive prompt sections owned by the guarded evolution engine.
+        this.promptSections = options.promptSections || null;
     }
 
     buildSystemPrompt() {
@@ -82,9 +87,14 @@ class Agent {
                     ? ` args: ${JSON.stringify(t.inputSchema)}`
                     : ''))
             .join('\n');
+        const adaptive = this.promptSections && this.promptSections.size
+            ? 'Adaptive guidance (learned from operations):\n' +
+              [...this.promptSections.entries()].map(([k, v]) => `[${k}] ${v}`).join('\n')
+            : '';
         return [
             `You are agent "${this.id}" with role "${this.role}".`,
             this.goal ? `Mission: ${this.goal}` : '',
+            adaptive,
             'You operate under a governance framework: actions may be denied by policy or need human approval. If an action is denied, adapt or finish with what you have.',
             'Available tools:',
             tools || '(none)',
@@ -109,8 +119,14 @@ class Agent {
 
         let output = null;
         let status = 'incomplete';
+        const deadline = Date.now() + this.maxDurationMs;
 
         for (let step = 1; step <= this.maxSteps; step++) {
+            if (Date.now() > deadline) {
+                status = 'deadline_exceeded';
+                output = `Stopped: task exceeded the ${this.maxDurationMs}ms loop deadline.`;
+                break;
+            }
             let response;
             try {
                 response = await this.provider.complete(messages, { system: this.buildSystemPrompt() });

@@ -120,6 +120,14 @@ observation, and the agent adapts or finishes with what it has.
 | `agi/observability/metrics.js` | Counters, gauges, histograms, `snapshot()` |
 | `agi/config/config.js` | Defaults ← overrides ← env; fail-fast validation; secrets only from env |
 | `agi/adapters/telegram-adapter.js` | Telegram as a channel: tasks in, results + approval prompts out |
+| `agi/routing/self-healing-router.js` | Dijkstra-based deterministic recovery; LLM escalation only when no path remains; attention triage |
+| `agi/monitoring/companion-runtime.js` | VIGIL-style maintenance plane: appraisals, drift detection, RBT diagnostics, remediation proposals |
+| `agi/verification/property-testing.js` | Property-based testing: invariant falsification with shrinking counterexamples |
+| `agi/verification/mutation-testing.js` | Mutation-guided suite scoring: semantic mutants, kill-rate thresholds |
+| `agi/evolution/evolution-engine.js` | Guarded self-evolution: threat scan → evaluation → policy/approval → hash-chained lineage + rollback |
+| `agi/security/execution-boundaries.js` | Tool/loop timeouts, default-deny egress allowlist, workspace path confinement |
+
+See [SELF_EVOLUTION.md](SELF_EVOLUTION.md) for the autonomy layer's full design, threat model, and integration seams.
 
 ## Enterprise readiness checklist
 

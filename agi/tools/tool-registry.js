@@ -22,6 +22,7 @@
  */
 
 const { retry, CircuitBreaker, RateLimiter } = require('../resilience');
+const { withTimeout } = require('../security/execution-boundaries');
 
 const RISK_LEVELS = ['low', 'medium', 'high', 'critical'];
 
@@ -189,11 +190,12 @@ class ToolRegistry {
             throw new ToolExecutionError(`Tool "${name}" is rate limited`, 'RATE_LIMITED');
         }
 
-        // 5b. Circuit breaker + retry around the handler
+        // 5b. Circuit breaker + retry + tool-level timeout around the handler
+        const timeoutMs = definition.timeoutMs || this.options.timeoutMs || 30000;
         const start = Date.now();
         try {
             const result = await breaker.execute(() =>
-                retry(() => definition.handler(args, callCtx), {
+                retry(() => withTimeout(() => definition.handler(args, callCtx), timeoutMs, `tool "${name}"`), {
                     attempts: 1, // per-tool retries are opt-in
                     ...this.options.retry
                 })

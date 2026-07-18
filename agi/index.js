@@ -29,6 +29,10 @@ const { ToolRegistry } = require('./tools/tool-registry');
 const { Provider, AnthropicProvider, MockProvider } = require('./providers');
 const { Agent } = require('./core/agent');
 const { Orchestrator } = require('./core/orchestrator');
+const { SelfHealingRouter, AttentionMonitor } = require('./routing/self-healing-router');
+const { EvolutionEngine } = require('./evolution/evolution-engine');
+const { CompanionRuntime } = require('./monitoring/companion-runtime');
+const { EgressPolicy, WorkspaceBoundary, withTimeout } = require('./security/execution-boundaries');
 
 function createProvider(config, override) {
     if (override) return override;
@@ -78,12 +82,36 @@ function createRuntime(configOverrides = {}, deps = {}) {
         config.orchestrator
     );
 
+    // Deterministic control plane: graph routing + cheap signal triage,
+    // with the LLM reserved for genuine no-path escalations.
+    const router = new SelfHealingRouter({
+        metrics,
+        logger,
+        onEscalate: deps.onRouterEscalate || null
+    });
+    const attention = new AttentionMonitor();
+
+    // Guarded self-evolution: proposals from anywhere, commits only through
+    // threat scan -> independent evaluation -> policy -> human approval.
+    const evolution = new EvolutionEngine(
+        { policyEngine, approvalManager: approvals, audit, memory, logger, metrics },
+        config.evolution
+    );
+
+    // Maintenance plane: cross-session drift detection and RBT diagnostics.
+    const companion = new CompanionRuntime({ eventBus, logger, metrics });
+
+    // Blast-radius controls: default-deny egress.
+    const egress = new EgressPolicy({ allow: config.egress.allow, audit });
+
     function createAgent(options) {
         const agent = new Agent({
             maxSteps: config.agentDefaults.maxSteps,
+            maxDurationMs: config.agentDefaults.maxDurationMs,
             provider,
             toolRegistry: tools,
             memory,
+            promptSections: evolution.promptSections,
             logger: logger.child({ agentId: options.id }),
             metrics,
             ...options
@@ -105,6 +133,11 @@ function createRuntime(configOverrides = {}, deps = {}) {
         tools,
         provider,
         orchestrator,
+        router,
+        attention,
+        evolution,
+        companion,
+        egress,
         createAgent,
         /** Health/compliance snapshot for dashboards and readiness probes. */
         health() {
@@ -113,6 +146,10 @@ function createRuntime(configOverrides = {}, deps = {}) {
                 orchestrator: orchestrator.stats(),
                 pendingApprovals: approvals.listPending().length,
                 auditChain: audit.verify(),
+                evolutionLineage: evolution.verifyLineage(),
+                generation: evolution.generation,
+                router: router.stats,
+                drift: companion.driftReport(),
                 metrics: metrics.snapshot()
             };
         }
@@ -124,5 +161,7 @@ module.exports = {
     // Re-export building blocks for advanced composition:
     Agent, Orchestrator, PolicyEngine, RBAC, AuditLog, ApprovalManager,
     MemoryManager, ToolRegistry, Provider, AnthropicProvider, MockProvider,
-    Logger, MetricsRegistry, EventBus, DEFAULT_POLICIES
+    Logger, MetricsRegistry, EventBus, DEFAULT_POLICIES,
+    SelfHealingRouter, AttentionMonitor, EvolutionEngine, CompanionRuntime,
+    EgressPolicy, WorkspaceBoundary, withTimeout
 };

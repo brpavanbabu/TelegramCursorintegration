@@ -1,13 +1,16 @@
 'use strict';
 
 /**
- * Three-tier agent memory:
+ * Agent memory following Tulving's taxonomy (plus a working buffer):
  *
- *  - Working memory:  bounded per-session message window (what the agent is
+ *  - Working memory:    bounded per-session message window (what the agent is
  *    doing right now). Mirrors the original bot's 50-message context.
- *  - Episodic memory: append-only record of completed tasks and outcomes,
+ *  - Episodic memory:   append-only record of completed tasks and outcomes,
  *    optionally persisted as JSONL so knowledge survives restarts.
- *  - Semantic memory: keyword-indexed facts with relevance-scored recall.
+ *  - Semantic memory:   keyword-indexed facts with relevance-scored recall.
+ *  - Procedural memory: learned skills/routines with versioning and
+ *    reliability stats, fed by execution feedback. Skills are only written
+ *    here through the guarded evolution engine — never directly by agents.
  */
 
 const fs = require('fs');
@@ -107,6 +110,61 @@ class SemanticMemory {
     }
 }
 
+class ProceduralMemory {
+    constructor() {
+        this.skills = new Map(); // name -> { name, description, source, version, stats, history }
+    }
+
+    register({ name, description = '', source }) {
+        if (!name || !source) throw new Error('Skill requires name and source');
+        const existing = this.skills.get(name);
+        const skill = {
+            name,
+            description: description || (existing ? existing.description : name),
+            source,
+            version: existing ? existing.version + 1 : 1,
+            stats: existing ? existing.stats : { uses: 0, successes: 0, failures: 0 },
+            history: existing ? [...existing.history, existing.source].slice(-10) : [],
+            updatedAt: Date.now()
+        };
+        this.skills.set(name, skill);
+        return skill;
+    }
+
+    get(name) { return this.skills.get(name) || null; }
+
+    remove(name) { this.skills.delete(name); }
+
+    recordOutcome(name, success) {
+        const skill = this.skills.get(name);
+        if (!skill) return;
+        skill.stats.uses += 1;
+        if (success) skill.stats.successes += 1;
+        else skill.stats.failures += 1;
+    }
+
+    reliability(name) {
+        const skill = this.skills.get(name);
+        if (!skill || !skill.stats.uses) return null;
+        return skill.stats.successes / skill.stats.uses;
+    }
+
+    /** Token-overlap match of skills against a task description. */
+    bestFor(query, limit = 3) {
+        const queryTokens = new Set(tokenize(query));
+        return [...this.skills.values()]
+            .map(skill => {
+                const tokens = tokenize(`${skill.name} ${skill.description}`);
+                const overlap = tokens.filter(t => queryTokens.has(t)).length;
+                return { skill, score: tokens.length ? overlap / Math.sqrt(tokens.length) : 0 };
+            })
+            .filter(s => s.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, limit)
+            .map(s => s.skill);
+    }
+}
+
 class MemoryManager {
     constructor(options = {}) {
         this.working = new WorkingMemory(options.workingMaxMessages || 50);
@@ -115,6 +173,7 @@ class MemoryManager {
             filePath: options.episodicFilePath
         });
         this.semantic = new SemanticMemory();
+        this.procedural = new ProceduralMemory();
     }
 
     /** Builds the memory portion of an agent prompt for a given task. */
@@ -130,6 +189,16 @@ class MemoryManager {
                 .map(e => `- ${e.goal || e.summary || 'task'}: ${e.outcome || 'unknown'}`)
                 .join('\n'));
         }
+        const skills = this.procedural.bestFor(taskDescription, 3);
+        if (skills.length) {
+            parts.push('Learned skills that may apply:\n' + skills
+                .map(s => `- ${s.name} (v${s.version}, reliability ${
+                    this.procedural.reliability(s.name) === null
+                        ? 'untested'
+                        : Math.round(this.procedural.reliability(s.name) * 100) + '%'
+                }): ${s.description}`)
+                .join('\n'));
+        }
         const working = this.working.getContext();
         if (working) {
             parts.push('Conversation so far:\n' + working);
@@ -138,4 +207,6 @@ class MemoryManager {
     }
 }
 
-module.exports = { MemoryManager, WorkingMemory, EpisodicMemory, SemanticMemory, tokenize };
+module.exports = {
+    MemoryManager, WorkingMemory, EpisodicMemory, SemanticMemory, ProceduralMemory, tokenize
+};

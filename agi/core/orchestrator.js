@@ -142,7 +142,11 @@ class Orchestrator {
                             details: { taskId: task.id, status: task.status }
                         });
                     }
-                    this.emit(`task.${task.status}`, { taskId: task.id, result: task.result });
+                    this.emit(`task.${task.status}`, {
+                        taskId: task.id,
+                        result: task.result,
+                        durationMs: task.finishedAt - task.startedAt
+                    });
                     resolve(task.result);
                     this.pump();
                 });

@@ -14,7 +14,8 @@ const DEFAULTS = {
         maxQueueSize: 100
     },
     agentDefaults: {
-        maxSteps: 8
+        maxSteps: 8,
+        maxDurationMs: 20 * 60 * 1000
     },
     approvals: {
         timeoutMs: 5 * 60 * 1000
@@ -31,7 +32,16 @@ const DEFAULTS = {
     tools: {
         rateLimiter: { capacity: 30, refillPerSecond: 5 },
         circuitBreaker: { failureThreshold: 5, resetTimeoutMs: 30000 },
-        retry: { attempts: 1 }
+        retry: { attempts: 1 },
+        timeoutMs: 30000
+    },
+    evolution: {
+        minMutationScore: 0.6,
+        propertyRuns: 200,
+        protectedTargets: []
+    },
+    egress: {
+        allow: []
     },
     provider: {
         kind: 'mock', // mock | anthropic
@@ -44,6 +54,9 @@ const ENV_OVERRIDES = {
     AGI_MAX_CONCURRENT: ['orchestrator', 'maxConcurrent', Number],
     AGI_MAX_QUEUE_SIZE: ['orchestrator', 'maxQueueSize', Number],
     AGI_AGENT_MAX_STEPS: ['agentDefaults', 'maxSteps', Number],
+    AGI_AGENT_MAX_DURATION_MS: ['agentDefaults', 'maxDurationMs', Number],
+    AGI_TOOL_TIMEOUT_MS: ['tools', 'timeoutMs', Number],
+    AGI_MIN_MUTATION_SCORE: ['evolution', 'minMutationScore', Number],
     AGI_APPROVAL_TIMEOUT_MS: ['approvals', 'timeoutMs', Number],
     AGI_AUDIT_FILE: ['audit', 'filePath'],
     AGI_EPISODIC_FILE: ['memory', 'episodicFilePath'],
@@ -89,6 +102,15 @@ function validate(config) {
     }
     if (!(config.agentDefaults.maxSteps >= 1 && config.agentDefaults.maxSteps <= 100)) {
         errors.push('agentDefaults.maxSteps must be between 1 and 100');
+    }
+    if (!(config.agentDefaults.maxDurationMs >= 1000)) {
+        errors.push('agentDefaults.maxDurationMs must be >= 1000');
+    }
+    if (!(config.tools.timeoutMs >= 100)) {
+        errors.push('tools.timeoutMs must be >= 100');
+    }
+    if (!(config.evolution.minMutationScore >= 0 && config.evolution.minMutationScore <= 1)) {
+        errors.push('evolution.minMutationScore must be between 0 and 1');
     }
     if (!['mock', 'anthropic'].includes(config.provider.kind)) {
         errors.push(`provider.kind must be mock|anthropic, got "${config.provider.kind}"`);
