@@ -15,6 +15,37 @@ Control your Cursor IDE directly from Telegram! This bot allows you to send comm
 - 🚀 **Zero Manual Steps**: Fully automated execution - no need to touch Cursor manually
 - ⚡ **One-Command Install**: Everything automated - no hassle!
 
+## 🧠 NEW: Enterprise AGI Runtime
+
+This repo now ships a governed, enterprise-ready agentic AI runtime in
+[`agi/`](agi/) that the Telegram bot can plug into:
+
+- **Default-deny policy engine** — every agent action must be explicitly allowed
+- **RBAC** with role inheritance and per-tool permissions
+- **Human-in-the-loop approvals** for high-risk actions (approve/deny from Telegram)
+- **Tamper-evident audit trail** (hash-chained, JSONL persistence)
+- **Multi-agent orchestrator** with capability routing, bounded queue & concurrency
+- **Three-tier memory** (working / episodic / semantic)
+- **Resilience** (retries, circuit breakers, rate limits) and **observability**
+  (structured redacted logs, metrics, health endpoint)
+- **Swappable model providers** (Anthropic API or offline mock) — zero runtime dependencies
+- **Self-healing router** — Dijkstra-based deterministic recovery; the LLM is called only when no path remains
+- **Companion runtime** — cross-session drift detection with Roses/Buds/Thorns diagnostics
+- **Verification gates** — property-based testing with shrinking + mutation-guided test scoring
+- **Guarded self-evolution** — the system proposes skill/prompt improvements, but every commit passes threat scan → independent evaluation → policy → human approval, with hash-chained lineage and rollback
+- **Execution boundaries** — tool & loop timeouts, default-deny egress allowlist, workspace path confinement
+
+The design bet: *capability lives in the harness, not the model* — the same
+runtime stays reliable with cheaper models because routing, verification,
+memory, and governance are deterministic infrastructure around the LLM.
+
+```bash
+npm test        # run the 63-test suite (no install needed)
+npm run demo    # offline end-to-end demo with visible governance
+```
+
+📐 Full design docs: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/SELF_EVOLUTION.md](docs/SELF_EVOLUTION.md)
+
 ## 🔒 Security First!
 
 This bot includes **password protection** to keep you safe:
