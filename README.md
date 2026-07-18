@@ -123,9 +123,43 @@ Bot: ✅ Deploying todo app with auth
 
 - `/start` - Welcome message and introduction
 - `/status` - Check bot status and current execution
+- `/diagram <description>` - Generate an architecture diagram (SVG) from a flow description
 - `/clear` - Clear conversation context (start fresh)
 - `/logout` - Logout (require password again)
 - `/help` - Show help message
+
+## 📐 Automatic Architecture Diagrams
+
+The `diagrams/` module turns a plain-text flow description into a polished,
+color-coded architecture diagram (SVG) — numbered steps, decision diamonds,
+ledger cylinders, legend, and key-concept panels.
+
+It's a two-stage pipeline: **Claude Sonnet 5** converts your description into a
+structured `DiagramSpec` JSON (via the Claude API's structured outputs), and a
+deterministic renderer turns that spec into SVG with a fixed design system —
+so every diagram looks consistent and can be re-rendered or hand-tweaked
+without another API call.
+
+**From the CLI:**
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...    # or add "anthropicApiKey" to config.json
+
+# From a markdown/text/code file
+node diagrams/generate-diagram.js --input docs/settlement-flow.md --out diagram.svg
+
+# From an inline description
+node diagrams/generate-diagram.js --prompt "Order flow: API receives order, ..." --out diagram.svg
+
+# Re-render an existing spec (no API call needed)
+node diagrams/render-svg.js diagrams/examples/btc-settlement.json out.svg
+```
+
+**From Telegram:** send `/diagram <flow description>` and the bot replies with
+the generated SVG.
+
+See [diagrams/DESIGN.md](diagrams/DESIGN.md) for the architecture, spec
+schema, and design-system details.
 
 ## 🔧 Configuration
 

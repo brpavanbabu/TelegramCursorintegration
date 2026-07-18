@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DiagramSpec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "nodes", "edges"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Main diagram heading, e.g. 'Bitcoin Settlement & Reservation Flow'"
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "One-line description shown under the title"
+    },
+    "actors": {
+      "type": "array",
+      "description": "Header row of participants shown as icons above the flow",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "icon"],
+        "properties": {
+          "label": { "type": "string", "description": "Bold actor name" },
+          "sublabel": { "type": "string", "description": "Parenthetical description under the label" },
+          "icon": {
+            "type": "string",
+            "enum": ["bank", "server", "user", "globe", "database", "gear", "shield", "doc"],
+            "description": "Icon glyph for the actor"
+          },
+          "color": {
+            "type": "string",
+            "enum": ["purple", "blue", "green", "orange", "red", "gray"],
+            "description": "Icon accent color"
+          }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "description": "All boxes in the flow, positioned on a coarse grid",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "title", "col", "row"],
+        "properties": {
+          "id": { "type": "string", "description": "Unique id referenced by edges" },
+          "type": {
+            "type": "string",
+            "enum": ["process", "decision", "datastore", "note"],
+            "description": "process = rounded rect; decision = diamond; datastore = cylinder; note = callout box"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["system", "external", "success", "error", "reversal", "info", "neutral"],
+            "description": "Color coding: system=blue (our system actions), external=orange (external validation), success=green (happy path), error=red (exception path), reversal=purple (reversal/failure handling), info=yellow note, neutral=gray"
+          },
+          "title": { "type": "string", "description": "Bold heading, usually numbered like '5. Record Settlement in Our Books'" },
+          "lines": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Bullet lines inside the box"
+          },
+          "col": { "type": "integer", "description": "Grid column 0-5, left to right" },
+          "row": { "type": "integer", "description": "Grid row 0-N, top to bottom" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "description": "Arrows between nodes",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to"],
+        "properties": {
+          "from": { "type": "string", "description": "Source node id" },
+          "to": { "type": "string", "description": "Target node id" },
+          "label": { "type": "string", "description": "Edge label, e.g. 'Yes' / 'No'" },
+          "labelColor": {
+            "type": "string",
+            "enum": ["default", "success", "error", "reversal"],
+            "description": "Label text color; success=green (Yes), error=red (No)"
+          },
+          "style": {
+            "type": "string",
+            "enum": ["solid", "dashed"],
+            "description": "dashed is used for reference/reversal/data flows"
+          },
+          "color": {
+            "type": "string",
+            "enum": ["default", "success", "error", "reversal", "muted"],
+            "description": "Arrow color; default is dark gray"
+          },
+          "note": { "type": "string", "description": "Optional multi-word annotation floating along the edge" }
+        }
+      }
+    },
+    "panels": {
+      "type": "array",
+      "description": "Footer panels like 'Key Concepts' and 'Statuses Used'",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "items"],
+        "properties": {
+          "title": { "type": "string" },
+          "category": {
+            "type": "string",
+            "enum": ["system", "external", "success", "error", "reversal", "info", "neutral"],
+            "description": "Panel tint color"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["term", "description"],
+              "properties": {
+                "term": { "type": "string", "description": "Bold lead-in, e.g. 'Reservation:' or 'RECEIVED'" },
+                "description": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "legend": {
+      "type": "boolean",
+      "description": "Render the legend box (auto-derived from categories used). Defaults to true."
+    }
+  }
+}

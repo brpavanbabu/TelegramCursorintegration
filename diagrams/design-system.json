@@ -1,0 +1,84 @@
+{
+  "canvas": {
+    "background": "#FFFFFF",
+    "padding": 40,
+    "columnWidth": 250,
+    "columnGap": 28,
+    "rowGap": 56,
+    "maxColumns": 6
+  },
+  "typography": {
+    "fontFamily": "Helvetica, Arial, sans-serif",
+    "title": { "size": 30, "weight": "bold", "color": "#111111" },
+    "subtitle": { "size": 17, "weight": "normal", "color": "#333333" },
+    "nodeTitle": { "size": 13, "weight": "bold", "color": "#111111" },
+    "nodeLine": { "size": 11.5, "weight": "normal", "color": "#222222" },
+    "actorLabel": { "size": 13, "weight": "bold", "color": "#111111" },
+    "actorSublabel": { "size": 11, "weight": "normal", "color": "#444444" },
+    "edgeLabel": { "size": 12, "weight": "bold" },
+    "panelTitle": { "size": 13, "weight": "bold" },
+    "panelItem": { "size": 11.5, "weight": "normal", "color": "#222222" }
+  },
+  "categories": {
+    "system":   { "fill": "#EAF2FB", "stroke": "#2B6CB8", "label": "Our System Actions" },
+    "external": { "fill": "#FDF0E2", "stroke": "#D9822B", "label": "External Validation" },
+    "success":  { "fill": "#E8F5E9", "stroke": "#2F855A", "label": "Successful Path (Happy Flow)" },
+    "error":    { "fill": "#FDECEA", "stroke": "#C53030", "label": "Exception / Error Path" },
+    "reversal": { "fill": "#F3EEFA", "stroke": "#6B46C1", "label": "Reversal / Failure Handling" },
+    "info":     { "fill": "#FFF9E6", "stroke": "#D6A400", "label": "Notes" },
+    "neutral":  { "fill": "#F5F5F5", "stroke": "#666666", "label": "Other" },
+    "datastore":{ "fill": "#FFFDF2", "stroke": "#C9A227", "label": "Ledger / Account Store" }
+  },
+  "node": {
+    "cornerRadius": 10,
+    "strokeWidth": 2,
+    "paddingX": 12,
+    "paddingY": 10,
+    "titleLineGap": 6,
+    "lineGap": 4,
+    "bullet": "•"
+  },
+  "edge": {
+    "strokeWidth": 1.6,
+    "colors": {
+      "default": "#333333",
+      "success": "#2F855A",
+      "error": "#C53030",
+      "reversal": "#6B46C1",
+      "muted": "#888888"
+    },
+    "labelColors": {
+      "default": "#333333",
+      "success": "#1E7A34",
+      "error": "#C53030",
+      "reversal": "#6B46C1"
+    },
+    "arrowSize": 7,
+    "dashArray": "6,5"
+  },
+  "actorRow": {
+    "iconSize": 40,
+    "gapBelow": 26,
+    "separator": { "stroke": "#BBBBBB", "dashArray": "2,5" },
+    "iconColors": {
+      "purple": "#6B46C1",
+      "blue": "#2B6CB8",
+      "green": "#2F855A",
+      "orange": "#D9822B",
+      "red": "#C53030",
+      "gray": "#555555"
+    }
+  },
+  "legend": {
+    "title": "Legends / Key",
+    "swatchWidth": 34,
+    "swatchHeight": 16,
+    "border": { "stroke": "#333333", "dashArray": "5,4", "radius": 8 }
+  },
+  "panel": {
+    "cornerRadius": 10,
+    "strokeWidth": 1.5,
+    "paddingX": 14,
+    "paddingY": 12
+  }
+}

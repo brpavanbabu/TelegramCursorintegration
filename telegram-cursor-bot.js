@@ -376,6 +376,7 @@ bot.onText(/\/start/, async (msg) => {
         `Example: "Build me a todo app with React"\n\n` +
         `*Commands:*\n` +
         `/status - Check bot status\n` +
+        `/diagram - Generate an architecture diagram from a description\n` +
         `/clear - Clear conversation context\n` +
         `/logout - Logout (require password again)\n` +
         `/help - Show this message`,
@@ -423,6 +424,64 @@ bot.onText(/\/logout/, async (msg) => {
     );
 });
 
+bot.onText(/\/diagram(?:\s+([\s\S]+))?/, async (msg, match) => {
+    const chatId = msg.chat.id;
+
+    if (!passwordSecurity.isAuthenticated(chatId, BOT_PASSWORD)) {
+        await passwordSecurity.requestPassword(bot, chatId);
+        return;
+    }
+
+    const description = match && match[1] ? match[1].trim() : '';
+    if (!description) {
+        await bot.sendMessage(
+            chatId,
+            `🖼 *Architecture Diagram Generator*\n\n` +
+            `Usage: \`/diagram <flow description>\`\n\n` +
+            `Example:\n\`/diagram Payment flow: gateway receives card payment, fraud check against external service, on pass record in ledger and notify customer, on fail reject and alert ops\`\n\n` +
+            `The description can be as long as Telegram allows — more detail gives a better diagram.`,
+            { parse_mode: 'Markdown' }
+        );
+        return;
+    }
+
+    let statusMsg;
+    try {
+        statusMsg = await bot.sendMessage(
+            chatId,
+            '🎨 *Generating architecture diagram...*\n\nClaude is designing the flow — this takes about a minute.',
+            { parse_mode: 'Markdown' }
+        );
+
+        const { generateDiagram } = require('./diagrams/generate-diagram');
+        const { spec, svg } = await generateDiagram(description);
+
+        const safeName = (spec.title || 'diagram')
+            .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+            .substring(0, 60) || 'diagram';
+        const outPath = path.join(require('os').tmpdir(), `${safeName}-${Date.now()}.svg`);
+        fs.writeFileSync(outPath, svg, 'utf8');
+
+        await bot.sendDocument(chatId, outPath, {
+            caption: `📐 ${spec.title}${spec.subtitle ? '\n' + spec.subtitle : ''}`
+        }, { filename: `${safeName}.svg`, contentType: 'image/svg+xml' });
+
+        try { fs.unlinkSync(outPath); } catch (e) { /* ignore */ }
+    } catch (error) {
+        console.error('❌ Diagram generation error:', error.message);
+        await bot.sendMessage(
+            chatId,
+            `❌ *Diagram generation failed*\n\n\`\`\`\n${error.message.substring(0, 500)}\n\`\`\`\n\n` +
+            `💡 Make sure ANTHROPIC_API_KEY is set (or \`anthropicApiKey\` in config.json) and dependencies are installed (\`npm install\`).`,
+            { parse_mode: 'Markdown' }
+        );
+    } finally {
+        if (statusMsg) {
+            try { await bot.deleteMessage(chatId, statusMsg.message_id); } catch (e) { /* ignore */ }
+        }
+    }
+});
+
 bot.onText(/\/help/, async (msg) => {
     const chatId = msg.chat.id;
     await bot.sendMessage(
@@ -446,6 +505,7 @@ bot.onText(/\/help/, async (msg) => {
         `*Commands:*\n` +
         `/start - Welcome message\n` +
         `/status - Check current status\n` +
+        `/diagram <description> - Generate an architecture diagram (SVG)\n` +
         `/clear - Clear conversation context\n` +
         `/logout - Logout (require password again)\n` +
         `/help - This help message\n\n` +
