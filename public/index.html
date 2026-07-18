@@ -1,0 +1,1002 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagram Studio</title>
+<style>
+  :root{
+    --bg: #F1F2F4;
+    --card: #FFFFFF;
+    --border: #E2E5E9;
+    --ink: #1A202C;
+    --text2: #5A6572;
+    --accent: #2B6CB8;
+    --accent-dark: #1F5493;
+    --accent-tint: #EAF2FB;
+    --success: #2F855A;
+    --error: #C53030;
+    --error-tint: #FDECEA;
+    --radius: 10px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input, textarea { font-family: inherit; }
+
+  a { color: var(--accent); }
+
+  .hidden { display: none !important; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 16px 24px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar .brand {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .topbar .tagline {
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  /* ---------- Banner ---------- */
+  .banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 20px;
+    margin: 0;
+    font-size: 13.5px;
+  }
+  .banner-error {
+    background: var(--error-tint);
+    color: var(--error);
+    border-bottom: 1px solid #F6C6C6;
+  }
+  .banner button.close {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+  .banner button.close:hover { background: rgba(0,0,0,0.06); }
+
+  /* ---------- Layout ---------- */
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 20px;
+    padding: 20px;
+    max-width: 1500px;
+    margin: 0 auto;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .col-left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .col-right {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 2px 6px rgba(16,24,40,0.05);
+  }
+
+  .card h2 {
+    margin: 0 0 4px;
+    font-size: 14.5px;
+    font-weight: 700;
+  }
+  .card .hint {
+    margin: 0 0 12px;
+    font-size: 12.5px;
+    color: var(--text2);
+  }
+
+  .card.locked { opacity: 0.55; }
+  .card.locked .lock-note {
+    display: block;
+    font-size: 12px;
+    color: var(--text2);
+    font-style: italic;
+    margin-top: 8px;
+  }
+  .lock-note { display: none; }
+
+  textarea, input[type="text"], input[type="password"] {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 11px;
+    font-size: 13.5px;
+    color: var(--ink);
+    background: #FCFDFE;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    resize: vertical;
+  }
+  textarea:focus, input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(43,108,184,0.15);
+  }
+  textarea:disabled, input:disabled, button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  #describeText { min-height: 120px; }
+
+  .example-link {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 12.5px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--accent);
+    padding: 0;
+    text-decoration: underline;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #FFFFFF;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+  }
+  .btn:hover:not(:disabled) { background: #F7F9FB; }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-dark); }
+  .btn-block { width: 100%; margin-top: 12px; }
+  .btn-small { padding: 5px 10px; font-size: 12.5px; }
+
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row-wrap { flex-wrap: wrap; }
+
+  /* ---------- Spec editor ---------- */
+  details.card summary {
+    cursor: pointer;
+    font-size: 14.5px;
+    font-weight: 700;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  details.card summary::-webkit-details-marker { display: none; }
+  details.card summary::after {
+    content: "▸";
+    color: var(--text2);
+    transition: transform 0.15s ease;
+    font-size: 12px;
+  }
+  details.card[open] summary::after { transform: rotate(90deg); }
+  details.card .spec-body { margin-top: 12px; }
+
+  #specEditor {
+    font-family: var(--mono);
+    font-size: 12px;
+    min-height: 260px;
+    line-height: 1.5;
+    white-space: pre;
+  }
+  .inline-error {
+    color: var(--error);
+    font-size: 12.5px;
+    margin-top: 8px;
+    display: none;
+  }
+  .inline-error.show { display: block; }
+
+  /* ---------- Preview ---------- */
+  .preview-card {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 108px);
+    min-height: 520px;
+    overflow: hidden;
+    padding: 0;
+  }
+  .preview-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .zoom-controls, .export-controls { display: flex; align-items: center; gap: 6px; }
+  .zoom-readout {
+    min-width: 46px;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--text2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .preview-scroll {
+    position: relative;
+    flex: 1;
+    overflow: auto;
+    background: #FBFBFC;
+    padding: 28px;
+  }
+
+  .svg-wrapper {
+    display: inline-block;
+    transform-origin: top left;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(16,24,40,0.08);
+    border-radius: 6px;
+  }
+  .svg-wrapper svg { display: block; }
+
+  .preview-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: var(--text2);
+    text-align: center;
+    padding: 20px;
+  }
+  .preview-empty p {
+    max-width: 320px;
+    font-size: 13.5px;
+    margin: 0;
+  }
+
+  /* ---------- Loading overlay ---------- */
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.88);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    z-index: 5;
+  }
+  .spinner {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+  }
+  .spinner.small { width: 20px; height: 20px; border-width: 2.5px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13.5px; color: var(--ink); font-weight: 600; }
+  .loading-elapsed { font-size: 12px; color: var(--text2); font-variant-numeric: tabular-nums; }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,32,44,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 20px;
+  }
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 22px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 10px 40px rgba(16,24,40,0.25);
+  }
+  .modal h2 { margin: 0 0 8px; font-size: 16px; }
+  .modal p { margin: 0 0 14px; font-size: 13px; color: var(--text2); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+  code.k { font-family: var(--mono); background: var(--accent-tint); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <span class="brand">Diagram Studio</span>
+    <span class="tagline">describe &rarr; diagram &rarr; refine</span>
+  </header>
+
+  <div id="errorBanner" class="banner banner-error hidden" role="alert">
+    <span id="errorText"></span>
+    <button class="close" id="errorClose" aria-label="Dismiss">&times;</button>
+  </div>
+
+  <main class="layout">
+    <section class="col-left">
+
+      <div class="card" id="describeCard">
+        <h2>Describe your flow</h2>
+        <p class="hint">Steps, decisions, external checks, data stores, error handling&hellip;</p>
+        <textarea id="describeText" placeholder="Describe your flow &mdash; steps, decisions, external checks, data stores, error handling..."></textarea>
+        <div>
+          <button class="example-link" id="exampleLink" type="button">Try an example</button>
+        </div>
+        <button class="btn btn-primary btn-block" id="generateBtn" type="button">Generate</button>
+      </div>
+
+      <div class="card locked" id="refineCard">
+        <h2>Refine</h2>
+        <p class="hint">Tell it what to change &mdash; e.g. &ldquo;add a timeout branch after step 3&rdquo;</p>
+        <input type="text" id="refineText" placeholder="Tell it what to change&hellip;" disabled>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn btn-primary" id="applyBtn" type="button" disabled>Apply</button>
+          <button class="btn" id="undoBtn" type="button" disabled>Undo</button>
+        </div>
+        <span class="lock-note">Generate a diagram first to unlock refining.</span>
+      </div>
+
+      <details class="card locked spec-card" id="specCard">
+        <summary>Spec editor</summary>
+        <div class="spec-body">
+          <p class="hint">Pretty-printed, editable JSON. Re-render is free and instant.</p>
+          <textarea id="specEditor" spellcheck="false" disabled></textarea>
+          <div class="inline-error" id="specError"></div>
+          <button class="btn btn-block" id="rerenderBtn" type="button" disabled>Re-render</button>
+        </div>
+        <span class="lock-note">Generate a diagram first to unlock the spec editor.</span>
+      </details>
+
+    </section>
+
+    <section class="col-right">
+      <div class="card preview-card">
+        <div class="preview-toolbar">
+          <div class="zoom-controls">
+            <button class="btn btn-small" id="zoomOutBtn" type="button" aria-label="Zoom out">&minus;</button>
+            <span class="zoom-readout" id="zoomReadout">100%</span>
+            <button class="btn btn-small" id="zoomInBtn" type="button" aria-label="Zoom in">+</button>
+            <button class="btn btn-small" id="fitBtn" type="button">Fit width</button>
+          </div>
+          <div class="export-controls">
+            <button class="btn btn-small" id="copyLinkBtn" type="button" disabled>Copy link</button>
+            <button class="btn btn-small" id="downloadSvgBtn" type="button" disabled>Download SVG</button>
+            <button class="btn btn-small" id="downloadSpecBtn" type="button" disabled>Download spec.json</button>
+          </div>
+        </div>
+
+        <div class="preview-scroll" id="previewScroll">
+          <div class="preview-empty" id="previewEmpty">
+            <svg width="220" height="110" viewBox="0 0 220 110" fill="none" aria-hidden="true">
+              <rect x="8" y="14" width="66" height="34" rx="7" fill="#EAF2FB" stroke="#2B6CB8" stroke-width="1.5"/>
+              <rect x="8" y="64" width="66" height="34" rx="7" fill="#FDF0E2" stroke="#D9822B" stroke-width="1.5"/>
+              <rect x="150" y="38" width="66" height="34" rx="7" fill="#E8F5E9" stroke="#2F855A" stroke-width="1.5"/>
+              <path d="M74 31 h26" stroke="#5A6572" stroke-width="1.5" fill="none"/>
+              <path d="M100 31 l-6 -3.5 v7 z" fill="#5A6572"/>
+              <path d="M74 81 h20 v-30 h6" stroke="#5A6572" stroke-width="1.5" fill="none"/>
+              <path d="M100 51 l-6 -3.5 v7 z" fill="#5A6572"/>
+              <path d="M104 55 h40" stroke="#5A6572" stroke-width="1.5" fill="none"/>
+              <path d="M144 55 l-6 -3.5 v7 z" fill="#5A6572"/>
+            </svg>
+            <p>Describe a flow on the left and hit <strong>Generate</strong> to see your diagram here.</p>
+          </div>
+          <div class="svg-wrapper hidden" id="svgWrapper"></div>
+          <div class="loading-overlay hidden" id="loadingOverlay">
+            <div class="spinner" id="loadingSpinner"></div>
+            <div class="loading-text" id="loadingText">Working&hellip;</div>
+            <div class="loading-elapsed" id="loadingElapsed"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop hidden" id="authModalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+      <h2 id="authModalTitle">Access token required</h2>
+      <p>This deployment requires an access token. It will be stored in this browser (<code class="k">localStorage</code>) and sent with future requests.</p>
+      <input type="password" id="authTokenInput" placeholder="Access token" autocomplete="off">
+      <div class="modal-actions">
+        <button class="btn" id="authCancel" type="button">Cancel</button>
+        <button class="btn btn-primary" id="authSubmit" type="button">Save &amp; Retry</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  "use strict";
+
+  /* =========================================================================
+   * Pure helpers: share-link codec
+   * (kept free of DOM/network access so they can be lifted out and unit
+   * tested on their own)
+   * ========================================================================= */
+
+  function toBase64Url(bytes) {
+    var binary = "";
+    for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    var b64 = btoa(binary);
+    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  function fromBase64Url(str) {
+    var b64 = str.replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    var binary = atob(b64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  function concatUint8Arrays(chunks) {
+    var total = 0;
+    for (var i = 0; i < chunks.length; i++) total += chunks[i].length;
+    var out = new Uint8Array(total);
+    var offset = 0;
+    for (var j = 0; j < chunks.length; j++) {
+      out.set(chunks[j], offset);
+      offset += chunks[j].length;
+    }
+    return out;
+  }
+
+  async function streamBytes(stream, bytes) {
+    var writer = stream.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    var reader = stream.readable.getReader();
+    var chunks = [];
+    while (true) {
+      var res = await reader.read();
+      if (res.done) break;
+      chunks.push(res.value);
+    }
+    return concatUint8Arrays(chunks);
+  }
+
+  async function deflateRawBytes(bytes) {
+    return streamBytes(new CompressionStream("deflate-raw"), bytes);
+  }
+
+  async function inflateRawBytes(bytes) {
+    return streamBytes(new DecompressionStream("deflate-raw"), bytes);
+  }
+
+  // spec -> "1.<base64url(deflate-raw(json))>" or "0.<base64url(utf8 json)>" fallback
+  async function encodeSpecForUrl(spec) {
+    var json = JSON.stringify(spec);
+    var bytes = new TextEncoder().encode(json);
+    if (typeof CompressionStream !== "undefined") {
+      try {
+        var compressed = await deflateRawBytes(bytes);
+        return "1." + toBase64Url(compressed);
+      } catch (e) {
+        /* fall through to uncompressed encoding below */
+      }
+    }
+    return "0." + toBase64Url(bytes);
+  }
+
+  // "1.xxxx" / "0.xxxx" -> spec object
+  async function decodeSpecFromUrl(fragmentValue) {
+    var dot = fragmentValue.indexOf(".");
+    if (dot < 0) throw new Error("Malformed share link");
+    var prefix = fragmentValue.slice(0, dot);
+    var payload = fragmentValue.slice(dot + 1);
+    var bytes = fromBase64Url(payload);
+    if (prefix === "1") {
+      var inflated = await inflateRawBytes(bytes);
+      return JSON.parse(new TextDecoder().decode(inflated));
+    }
+    if (prefix === "0") {
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
+    throw new Error("Unknown share link format: " + prefix);
+  }
+
+  function slugify(str) {
+    var base = (str || "diagram").toLowerCase().trim();
+    var slug = base.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return slug || "diagram";
+  }
+
+  /* =========================================================================
+   * App state + wiring (DOM-dependent; everything below this line assumes a
+   * browser environment)
+   * ========================================================================= */
+
+  var EXAMPLE_TEXT = "A customer submits a payment; our system first validates the request " +
+    "and runs it through an automated fraud-check service, branching into a decision on whether " +
+    "the transaction looks suspicious. If it passes, we write a debit and credit entry to the ledger, " +
+    "update the customer's balance, and send a confirmation notification. If fraud is suspected, the " +
+    "payment is held and routed to a manual review queue instead of the ledger. Any hard failure " +
+    "during processing (timeout, ledger write error) should land in an error-handling path that logs " +
+    "the incident and notifies operations rather than silently failing. Finally, add a refund/reversal " +
+    "path triggered later by a customer dispute: it reverses the original ledger entries, restores the " +
+    "balance, and notifies the customer that the reversal completed.";
+
+  var state = {
+    spec: null,
+    svg: null,
+    history: []
+  };
+
+  var zoom = 1;
+  var loadingInterval = null;
+  var loadingStart = 0;
+
+  var el = {};
+
+  function cacheEls() {
+    var ids = [
+      "errorBanner", "errorText", "errorClose",
+      "describeText", "exampleLink", "generateBtn",
+      "refineCard", "refineText", "applyBtn", "undoBtn",
+      "specCard", "specEditor", "specError", "rerenderBtn",
+      "previewScroll", "previewEmpty", "svgWrapper",
+      "loadingOverlay", "loadingText", "loadingElapsed", "loadingSpinner",
+      "zoomOutBtn", "zoomInBtn", "zoomReadout", "fitBtn",
+      "copyLinkBtn", "downloadSvgBtn", "downloadSpecBtn",
+      "authModalBackdrop", "authTokenInput", "authCancel", "authSubmit"
+    ];
+    ids.forEach(function (id) { el[id] = document.getElementById(id); });
+  }
+
+  /* ---------------- Error banner ---------------- */
+
+  function showError(message) {
+    el.errorText.textContent = message;
+    el.errorBanner.classList.remove("hidden");
+  }
+
+  function dismissError() {
+    el.errorBanner.classList.add("hidden");
+  }
+
+  /* ---------------- Loading overlay ---------------- */
+
+  function showLoading(kind) {
+    var messages = {
+      generate: "Claude Sonnet is designing your diagram…",
+      refine: "Applying your change…",
+      render: "Rendering…"
+    };
+    el.loadingText.textContent = messages[kind] || "Working…";
+    el.loadingOverlay.classList.remove("hidden");
+
+    if (kind === "render") {
+      el.loadingElapsed.textContent = "";
+      el.loadingSpinner.classList.add("small");
+      return;
+    }
+
+    el.loadingSpinner.classList.remove("small");
+    loadingStart = Date.now();
+    el.loadingElapsed.textContent = "0s";
+    if (loadingInterval) clearInterval(loadingInterval);
+    loadingInterval = setInterval(function () {
+      var secs = Math.floor((Date.now() - loadingStart) / 1000);
+      el.loadingElapsed.textContent = secs + "s";
+    }, 1000);
+  }
+
+  function hideLoading() {
+    el.loadingOverlay.classList.add("hidden");
+    if (loadingInterval) {
+      clearInterval(loadingInterval);
+      loadingInterval = null;
+    }
+  }
+
+  /* ---------------- Busy / lock state ---------------- */
+
+  function setBusy(busy) {
+    var controls = [
+      el.describeText, el.generateBtn, el.exampleLink,
+      el.refineText, el.applyBtn, el.undoBtn,
+      el.specEditor, el.rerenderBtn
+    ];
+    controls.forEach(function (c) {
+      if (!c) return;
+      c.disabled = busy;
+    });
+    if (!busy) {
+      updateUndoButton();
+      if (!state.spec) lockPostGenerateUi();
+    }
+  }
+
+  function unlockPostGenerateUi() {
+    el.refineCard.classList.remove("locked");
+    el.specCard.classList.remove("locked");
+    el.refineText.disabled = false;
+    el.applyBtn.disabled = false;
+    el.specEditor.disabled = false;
+    el.rerenderBtn.disabled = false;
+    el.copyLinkBtn.disabled = false;
+    el.downloadSvgBtn.disabled = false;
+    el.downloadSpecBtn.disabled = false;
+    updateUndoButton();
+  }
+
+  function lockPostGenerateUi() {
+    el.refineCard.classList.add("locked");
+    el.specCard.classList.add("locked");
+    el.refineText.disabled = true;
+    el.applyBtn.disabled = true;
+    el.specEditor.disabled = true;
+    el.rerenderBtn.disabled = true;
+    el.undoBtn.disabled = true;
+    el.copyLinkBtn.disabled = true;
+    el.downloadSvgBtn.disabled = true;
+    el.downloadSpecBtn.disabled = true;
+  }
+
+  function updateUndoButton() {
+    el.undoBtn.disabled = state.history.length === 0;
+  }
+
+  /* ---------------- Preview / zoom ---------------- */
+
+  function updatePreview(svg) {
+    el.svgWrapper.innerHTML = svg;
+    el.previewEmpty.classList.add("hidden");
+    el.svgWrapper.classList.remove("hidden");
+    zoom = 1;
+    applyZoom();
+  }
+
+  function updateSpecEditor(spec) {
+    el.specEditor.value = JSON.stringify(spec, null, 2);
+    el.specError.classList.remove("show");
+    el.specError.textContent = "";
+  }
+
+  function applyZoom() {
+    el.svgWrapper.style.transform = "scale(" + zoom + ")";
+    el.zoomReadout.textContent = Math.round(zoom * 100) + "%";
+  }
+
+  function zoomBy(delta) {
+    zoom = Math.min(4, Math.max(0.1, zoom + delta));
+    applyZoom();
+  }
+
+  function getSvgIntrinsicWidth() {
+    var svgEl = el.svgWrapper.querySelector("svg");
+    if (!svgEl) return 800;
+    var vb = svgEl.getAttribute("viewBox");
+    if (vb) {
+      var parts = vb.trim().split(/\s+/).map(Number);
+      if (parts.length === 4 && parts[2] > 0) return parts[2];
+    }
+    var w = parseFloat(svgEl.getAttribute("width"));
+    if (w > 0) return w;
+    return svgEl.getBoundingClientRect().width || 800;
+  }
+
+  function fitWidth() {
+    var containerWidth = el.previewScroll.clientWidth - 56; // account for padding
+    var svgWidth = getSvgIntrinsicWidth();
+    if (svgWidth <= 0) return;
+    zoom = Math.max(0.1, Math.min(4, containerWidth / svgWidth));
+    applyZoom();
+  }
+
+  /* ---------------- API ---------------- */
+
+  function requestTokenViaModal() {
+    return new Promise(function (resolve) {
+      el.authTokenInput.value = "";
+      el.authModalBackdrop.classList.remove("hidden");
+      el.authTokenInput.focus();
+
+      function cleanup() {
+        el.authModalBackdrop.classList.add("hidden");
+        el.authSubmit.removeEventListener("click", onSubmit);
+        el.authCancel.removeEventListener("click", onCancel);
+        el.authTokenInput.removeEventListener("keydown", onKeydown);
+      }
+      function onSubmit() {
+        var val = el.authTokenInput.value.trim();
+        cleanup();
+        resolve(val || null);
+      }
+      function onCancel() {
+        cleanup();
+        resolve(null);
+      }
+      function onKeydown(e) {
+        if (e.key === "Enter") onSubmit();
+        if (e.key === "Escape") onCancel();
+      }
+      el.authSubmit.addEventListener("click", onSubmit);
+      el.authCancel.addEventListener("click", onCancel);
+      el.authTokenInput.addEventListener("keydown", onKeydown);
+    });
+  }
+
+  async function postDiagram(body, headers) {
+    return fetch("/api/diagram", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(body)
+    });
+  }
+
+  async function callApi(action, payload) {
+    var body = Object.assign({ action: action }, payload);
+    var headers = { "Content-Type": "application/json" };
+    var token = localStorage.getItem("diagramStudioToken");
+    if (token) headers["x-access-token"] = token;
+
+    var resp = await postDiagram(body, headers);
+
+    if (resp.status === 401) {
+      var newToken = await requestTokenViaModal();
+      if (newToken) {
+        localStorage.setItem("diagramStudioToken", newToken);
+        headers["x-access-token"] = newToken;
+        resp = await postDiagram(body, headers);
+      }
+    }
+
+    var data = {};
+    try { data = await resp.json(); } catch (e) { /* leave as {} */ }
+
+    if (!resp.ok) {
+      throw new Error(data.error || ("Request failed with status " + resp.status));
+    }
+    return data;
+  }
+
+  /* ---------------- History-aware spec application ---------------- */
+
+  function applySpec(spec, svg, opts) {
+    opts = opts || {};
+    if (opts.pushCurrent && state.spec) {
+      state.history.push(state.spec);
+    }
+    state.spec = spec;
+    state.svg = svg;
+    updatePreview(svg);
+    updateSpecEditor(spec);
+    unlockPostGenerateUi();
+  }
+
+  /* ---------------- Actions ---------------- */
+
+  async function onGenerate() {
+    var text = el.describeText.value.trim();
+    if (!text) {
+      showError("Please describe the flow you want to diagram.");
+      return;
+    }
+    dismissError();
+    setBusy(true);
+    showLoading("generate");
+    try {
+      var data = await callApi("generate", { description: text });
+      applySpec(data.spec, data.svg, { pushCurrent: false });
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      hideLoading();
+      setBusy(false);
+    }
+  }
+
+  async function onRefine() {
+    var instruction = el.refineText.value.trim();
+    if (!instruction) {
+      showError("Describe the change you'd like first.");
+      return;
+    }
+    if (!state.spec) return;
+    dismissError();
+    setBusy(true);
+    showLoading("refine");
+    try {
+      var data = await callApi("refine", { spec: state.spec, instruction: instruction });
+      applySpec(data.spec, data.svg, { pushCurrent: true });
+      el.refineText.value = "";
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      hideLoading();
+      setBusy(false);
+    }
+  }
+
+  async function onUndo() {
+    if (state.history.length === 0) return;
+    var prevSpec = state.history[state.history.length - 1];
+    dismissError();
+    setBusy(true);
+    showLoading("render");
+    try {
+      var data = await callApi("render", { spec: prevSpec });
+      state.history.pop();
+      state.spec = data.spec || prevSpec;
+      state.svg = data.svg;
+      updatePreview(state.svg);
+      updateSpecEditor(state.spec);
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      hideLoading();
+      setBusy(false);
+    }
+  }
+
+  async function onRerender() {
+    var parsed;
+    try {
+      parsed = JSON.parse(el.specEditor.value);
+    } catch (e) {
+      el.specError.textContent = "Invalid JSON: " + e.message;
+      el.specError.classList.add("show");
+      return;
+    }
+    el.specError.classList.remove("show");
+    el.specError.textContent = "";
+    dismissError();
+    setBusy(true);
+    showLoading("render");
+    try {
+      var data = await callApi("render", { spec: parsed });
+      applySpec(data.spec || parsed, data.svg, { pushCurrent: true });
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      hideLoading();
+      setBusy(false);
+    }
+  }
+
+  function onFillExample() {
+    el.describeText.value = EXAMPLE_TEXT;
+    el.describeText.focus();
+  }
+
+  function downloadBlob(content, filename, mime) {
+    var blob = new Blob([content], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function onDownloadSvg() {
+    if (!state.svg) return;
+    downloadBlob(state.svg, slugify(state.spec && state.spec.title) + ".svg", "image/svg+xml");
+  }
+
+  function onDownloadSpec() {
+    if (!state.spec) return;
+    downloadBlob(JSON.stringify(state.spec, null, 2), slugify(state.spec.title) + ".spec.json", "application/json");
+  }
+
+  async function onCopyLink() {
+    if (!state.spec) return;
+    try {
+      var encoded = await encodeSpecForUrl(state.spec);
+      var url = location.origin + location.pathname + "#s=" + encoded;
+      await navigator.clipboard.writeText(url);
+      var original = el.copyLinkBtn.textContent;
+      el.copyLinkBtn.textContent = "Copied!";
+      setTimeout(function () { el.copyLinkBtn.textContent = original; }, 1500);
+    } catch (e) {
+      showError("Could not copy link: " + e.message);
+    }
+  }
+
+  async function loadFromHashIfPresent() {
+    if (!location.hash || location.hash.indexOf("#s=") !== 0) return;
+    var fragmentValue = location.hash.slice(3);
+    showLoading("render");
+    try {
+      var spec = await decodeSpecFromUrl(fragmentValue);
+      var data = await callApi("render", { spec: spec });
+      applySpec(data.spec || spec, data.svg, { pushCurrent: false });
+    } catch (e) {
+      showError("Could not load shared diagram: " + e.message);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  /* ---------------- Wire up ---------------- */
+
+  function init() {
+    cacheEls();
+
+    el.errorClose.addEventListener("click", dismissError);
+    el.generateBtn.addEventListener("click", onGenerate);
+    el.exampleLink.addEventListener("click", onFillExample);
+
+    el.applyBtn.addEventListener("click", onRefine);
+    el.refineText.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") onRefine();
+    });
+    el.undoBtn.addEventListener("click", onUndo);
+
+    el.rerenderBtn.addEventListener("click", onRerender);
+
+    el.zoomOutBtn.addEventListener("click", function () { zoomBy(-0.1); });
+    el.zoomInBtn.addEventListener("click", function () { zoomBy(0.1); });
+    el.fitBtn.addEventListener("click", fitWidth);
+
+    el.copyLinkBtn.addEventListener("click", onCopyLink);
+    el.downloadSvgBtn.addEventListener("click", onDownloadSvg);
+    el.downloadSpecBtn.addEventListener("click", onDownloadSpec);
+
+    lockPostGenerateUi();
+    updateUndoButton();
+
+    loadFromHashIfPresent();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+</script>
+</body>
+</html>
