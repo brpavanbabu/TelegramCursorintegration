@@ -15,6 +15,28 @@ Control your Cursor IDE directly from Telegram! This bot allows you to send comm
 - 🚀 **Zero Manual Steps**: Fully automated execution - no need to touch Cursor manually
 - ⚡ **One-Command Install**: Everything automated - no hassle!
 
+## 🧠 NEW: Enterprise AGI Runtime
+
+This repo now ships a governed, enterprise-ready agentic AI runtime in
+[`agi/`](agi/) that the Telegram bot can plug into:
+
+- **Default-deny policy engine** — every agent action must be explicitly allowed
+- **RBAC** with role inheritance and per-tool permissions
+- **Human-in-the-loop approvals** for high-risk actions (approve/deny from Telegram)
+- **Tamper-evident audit trail** (hash-chained, JSONL persistence)
+- **Multi-agent orchestrator** with capability routing, bounded queue & concurrency
+- **Three-tier memory** (working / episodic / semantic)
+- **Resilience** (retries, circuit breakers, rate limits) and **observability**
+  (structured redacted logs, metrics, health endpoint)
+- **Swappable model providers** (Anthropic API or offline mock) — zero runtime dependencies
+
+```bash
+npm test        # run the 39-test suite (no install needed)
+npm run demo    # offline end-to-end demo with visible governance
+```
+
+📐 Full design docs: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
 ## 🔒 Security First!
 
 This bot includes **password protection** to keep you safe:
