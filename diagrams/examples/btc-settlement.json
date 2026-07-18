@@ -1,0 +1,175 @@
+{
+  "title": "Bitcoin Settlement & Reservation Flow",
+  "subtitle": "From Provider Message to Client Position Credit",
+  "actors": [
+    { "label": "Provider / Network", "sublabel": "(Mastermind / Blockchain)", "icon": "bank", "color": "purple" },
+    { "label": "Our System", "sublabel": "(Internal Books)", "icon": "server", "color": "blue" },
+    { "label": "Client", "sublabel": "(Beneficiary)", "icon": "user", "color": "green" },
+    { "label": "Mastermind System", "sublabel": "(Reference / Reconciliation)", "icon": "globe", "color": "orange" }
+  ],
+  "nodes": [
+    {
+      "id": "n1", "type": "process", "category": "reversal",
+      "title": "1. Provider Sends Settlement Message",
+      "lines": ["1.0 BTC settled", "Settlement Date D"],
+      "col": 0, "row": 0
+    },
+    {
+      "id": "n2", "type": "process", "category": "system",
+      "title": "2. Receive & Validate Settlement Message",
+      "lines": ["Validate message format", "Verify source/authentication", "Extract: Quantity, Asset (BTC), Settlement Date, Txn ID"],
+      "col": 1, "row": 0
+    },
+    {
+      "id": "n3", "type": "process", "category": "external",
+      "title": "3. Mastermind / Reference Check",
+      "lines": ["Confirm settlement in source system / blockchain", "Confirm quantity & tx details", "Confirm settlement date"],
+      "col": 3, "row": 0
+    },
+    {
+      "id": "n4", "type": "decision", "category": "external",
+      "title": "4. Do Details Match?",
+      "lines": [],
+      "col": 2, "row": 1
+    },
+    {
+      "id": "n4a", "type": "process", "category": "error",
+      "title": "4A. Mismatch / Not Found",
+      "lines": ["Reject / Raise Alert", "Log discrepancy", "Notify Operations", "Do NOT proceed"],
+      "col": 4, "row": 1
+    },
+    {
+      "id": "manual", "type": "decision", "category": "error",
+      "title": "Manual Investigation Required?",
+      "lines": [],
+      "col": 4, "row": 2
+    },
+    {
+      "id": "reject", "type": "process", "category": "error",
+      "title": "Reject & Close Case",
+      "lines": [],
+      "col": 5, "row": 2
+    },
+    {
+      "id": "investigate", "type": "process", "category": "error",
+      "title": "Investigate & Reconcile",
+      "lines": ["Check with provider", "Check blockchain / transactions", "Reconcile & resolve"],
+      "col": 4, "row": 3
+    },
+    {
+      "id": "n5", "type": "process", "category": "system",
+      "title": "5. Record Settlement in Our Books",
+      "lines": ["Record BTC received", "Value date = Settlement Date D", "Status = RECEIVED (Unreserved)"],
+      "col": 2, "row": 2
+    },
+    {
+      "id": "ledger", "type": "datastore", "category": "datastore",
+      "title": "Our Ledger",
+      "lines": ["BTC Balance", "(Internal Account)"],
+      "col": 0, "row": 2
+    },
+    {
+      "id": "n6", "type": "process", "category": "system",
+      "title": "6. Create Reservation for Client",
+      "lines": ["Link client account", "Reserve 1.0 BTC", "Status = RESERVED", "No real position yet for client"],
+      "col": 2, "row": 3
+    },
+    {
+      "id": "note1", "type": "note", "category": "info",
+      "title": "Reservation Means:",
+      "lines": ["We have BTC in our books", "Set aside for client", "Not yet credited to client position"],
+      "col": 3, "row": 3
+    },
+    {
+      "id": "n7", "type": "process", "category": "system",
+      "title": "7. Await Final Confirmation",
+      "lines": ["Waiting for confirmation that settlement is final & transferable", "Monitor for any holds/reversals"],
+      "col": 2, "row": 4
+    },
+    {
+      "id": "n8", "type": "process", "category": "system",
+      "title": "8. Final Confirmation Received (Close Reservation Request)",
+      "lines": ["Provider/Mastermind confirms settlement final and available", "Close reservation for client"],
+      "col": 1, "row": 5
+    },
+    {
+      "id": "n9", "type": "process", "category": "success",
+      "title": "9. Close Reservation",
+      "lines": ["Release reservation", "Convert RESERVED -> SETTLED", "Prepare to credit client position"],
+      "col": 3, "row": 5
+    },
+    {
+      "id": "n10", "type": "process", "category": "success",
+      "title": "10. Credit Client Position",
+      "lines": ["Credit 1.0 BTC to client account", "Update client positions", "Status = SETTLED", "Real position now available to client"],
+      "col": 2, "row": 6
+    },
+    {
+      "id": "clientAccount", "type": "datastore", "category": "datastore",
+      "title": "Client Account",
+      "lines": ["BTC Position", "(Real / Available)"],
+      "col": 4, "row": 6
+    },
+    {
+      "id": "n11", "type": "process", "category": "success",
+      "title": "11. Notify & Update",
+      "lines": ["Notify client (position credited)", "Update reports & statements", "Archive message & logs"],
+      "col": 2, "row": 7
+    },
+    {
+      "id": "n12", "type": "process", "category": "reversal",
+      "title": "12. Reversal / Rejection Received Later",
+      "lines": ["Settlement reversed / rejected", "Insufficient funds / invalid", "Initiate reversal process"],
+      "col": 0, "row": 5
+    },
+    {
+      "id": "n13", "type": "process", "category": "reversal",
+      "title": "13. Reverse Client Credit",
+      "lines": ["Debit client position", "Reopen / recreate reservation", "Handle per business rules", "Notify client"],
+      "col": 0, "row": 6
+    }
+  ],
+  "edges": [
+    { "from": "n1", "to": "n2" },
+    { "from": "n2", "to": "n3" },
+    { "from": "n3", "to": "n4" },
+    { "from": "n4", "to": "n4a", "label": "No", "labelColor": "error", "color": "error" },
+    { "from": "n4", "to": "n5", "label": "Yes", "labelColor": "success", "color": "success" },
+    { "from": "n4a", "to": "manual" },
+    { "from": "manual", "to": "reject", "label": "No", "labelColor": "error", "color": "error" },
+    { "from": "manual", "to": "investigate", "label": "Yes", "labelColor": "success", "color": "success" },
+    { "from": "investigate", "to": "n5" },
+    { "from": "n5", "to": "ledger", "style": "dashed", "color": "muted" },
+    { "from": "n5", "to": "n6" },
+    { "from": "n6", "to": "n7" },
+    { "from": "n7", "to": "n8" },
+    { "from": "n8", "to": "n9" },
+    { "from": "n9", "to": "n10" },
+    { "from": "n10", "to": "clientAccount", "style": "dashed", "color": "muted" },
+    { "from": "n10", "to": "n11" },
+    { "from": "n12", "to": "n13" },
+    { "from": "n13", "to": "ledger", "style": "dashed", "color": "reversal", "note": "If later reversal / settlement invalid message received" }
+  ],
+  "panels": [
+    {
+      "title": "Key Concepts",
+      "category": "info",
+      "items": [
+        { "term": "Reservation", "description": "BTC held in our books and earmarked for a client, before it is credited as a real position." },
+        { "term": "Settlement", "description": "Confirmation that a BTC transfer is final, irreversible, and available." },
+        { "term": "Close Reservation", "description": "Releasing a reservation and converting it into a real, credited client position." },
+        { "term": "Reversal", "description": "A previously settled transaction is reversed or rejected after the fact, requiring the client credit to be undone." }
+      ]
+    },
+    {
+      "title": "Statuses Used",
+      "category": "system",
+      "items": [
+        { "term": "RECEIVED", "description": "BTC recorded in our books but not yet reserved for any client." },
+        { "term": "RESERVED", "description": "BTC set aside for a specific client; not yet a real client position." },
+        { "term": "SETTLED", "description": "Reservation closed and BTC credited to the client's real, available position." },
+        { "term": "REJECTED", "description": "Settlement message failed validation or reconciliation and was not processed." }
+      ]
+    }
+  ]
+}
