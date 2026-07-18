@@ -1,0 +1,161 @@
+{
+  "project": "Telegram + Cursor Integration Bot",
+  "description": "Machine-readable requirements. Every `verify` block is executed automatically by the Sentinel requirements engine; hand-written tests link back via reqs:['ID'] metadata. Status per requirement: PASS / FAIL / UNCOVERED.",
+  "requirements": [
+    {
+      "id": "SEC-001",
+      "title": "Commands are only executed for password-authenticated chats",
+      "priority": "critical",
+      "verify": [
+        { "type": "source_contains", "file": "telegram-cursor-bot.js", "pattern": "passwordSecurity\\.isAuthenticated" },
+        { "type": "module_exports", "file": "password-security.js", "names": ["isAuthenticated", "verifyPassword", "requestPassword", "logout"] }
+      ]
+    },
+    {
+      "id": "SEC-002",
+      "title": "At most 3 failed password attempts before lockout",
+      "priority": "critical",
+      "verify": [
+        { "type": "constant_equals", "file": "password-security.js", "export": "MAX_ATTEMPTS", "equals": 3 }
+      ]
+    },
+    {
+      "id": "SEC-003",
+      "title": "Lockout lasts 5 minutes and expires automatically",
+      "priority": "high",
+      "verify": [
+        { "type": "constant_equals", "file": "password-security.js", "export": "LOCKOUT_DURATION", "equals": 300000 }
+      ]
+    },
+    {
+      "id": "SEC-004",
+      "title": "Logout revokes authentication until the password is re-entered",
+      "priority": "high",
+      "verify": [
+        { "type": "source_contains", "file": "telegram-cursor-bot.js", "pattern": "passwordSecurity\\.logout" }
+      ]
+    },
+    {
+      "id": "SEC-005",
+      "title": "No dynamic code execution (eval / new Function) in the application",
+      "priority": "high",
+      "verify": [
+        { "type": "no_findings", "rule": "no-eval" }
+      ]
+    },
+    {
+      "id": "SEC-006",
+      "title": "No real Telegram bot token is committed to the repository",
+      "priority": "critical",
+      "verify": [
+        { "type": "no_findings", "rule": "telegram-token-committed" }
+      ]
+    },
+    {
+      "id": "SEC-007",
+      "title": "config.json (real secrets) is never committed and is gitignored",
+      "priority": "critical",
+      "verify": [
+        { "type": "file_missing", "path": "config.json" },
+        { "type": "source_contains", "file": ".gitignore", "pattern": "^config\\.json$", "flags": "m" }
+      ]
+    },
+    {
+      "id": "SEC-008",
+      "title": "Example config contains only placeholders, never real values",
+      "priority": "high",
+      "verify": [
+        { "type": "source_contains", "file": "config.example.json", "pattern": "YOUR_TELEGRAM_BOT_TOKEN_HERE" }
+      ]
+    },
+    {
+      "id": "FUN-001",
+      "title": "Bot refuses to start without a valid config.json (token + workspace)",
+      "priority": "high",
+      "verify": [
+        { "type": "source_contains", "file": "telegram-cursor-bot.js", "pattern": "process\\.exit\\(1\\)" }
+      ]
+    },
+    {
+      "id": "FUN-002",
+      "title": "Conversation context is preserved and capped at the last 50 messages",
+      "priority": "medium",
+      "verify": [
+        { "type": "source_contains", "file": "telegram-cursor-bot.js", "pattern": "slice\\(-50\\)" }
+      ]
+    },
+    {
+      "id": "FUN-003",
+      "title": "Concurrent command executions are rejected while one is running",
+      "priority": "high",
+      "verify": [
+        { "type": "source_contains", "file": "telegram-cursor-bot.js", "pattern": "currentExecution\\.isRunning" }
+      ]
+    },
+    {
+      "id": "FUN-004",
+      "title": "/clear resets the conversation context",
+      "priority": "medium",
+      "verify": [
+        { "type": "source_contains", "file": "telegram-cursor-bot.js", "pattern": "sessions\\.delete" }
+      ]
+    },
+    {
+      "id": "FUN-005",
+      "title": "/status reports execution state, workspace and session size",
+      "priority": "medium",
+      "verify": [
+        { "type": "source_contains", "file": "telegram-cursor-bot.js", "pattern": "Bot Status" }
+      ]
+    },
+    {
+      "id": "FUN-006",
+      "title": "Follow-up commands include context from previous messages",
+      "priority": "medium",
+      "verify": [
+        { "type": "source_contains", "file": "telegram-cursor-bot.js", "pattern": "Context from previous messages" }
+      ]
+    },
+    {
+      "id": "PKG-001",
+      "title": "npm start launches the bot",
+      "priority": "medium",
+      "verify": [
+        { "type": "package_script", "name": "start", "contains": "telegram-cursor-bot.js" }
+      ]
+    },
+    {
+      "id": "PKG-002",
+      "title": "npm test runs the full autonomous test pipeline",
+      "priority": "high",
+      "verify": [
+        { "type": "package_script", "name": "test", "contains": "testframework" }
+      ]
+    },
+    {
+      "id": "PKG-003",
+      "title": "Supported Node.js engine range is declared",
+      "priority": "low",
+      "verify": [
+        { "type": "json_path", "file": "package.json", "path": "engines.node", "matches": ">=" }
+      ]
+    },
+    {
+      "id": "QUA-001",
+      "title": "All application JavaScript parses cleanly",
+      "priority": "high",
+      "verify": [
+        { "type": "syntax_ok", "files": ["telegram-cursor-bot.js", "password-security.js", "setup.js", "install.js"] }
+      ]
+    },
+    {
+      "id": "DOC-001",
+      "title": "README documents setup and configuration",
+      "priority": "low",
+      "verify": [
+        { "type": "file_exists", "path": "README.md" },
+        { "type": "source_contains", "file": "README.md", "pattern": "config", "flags": "i" }
+      ]
+    }
+  ]
+}

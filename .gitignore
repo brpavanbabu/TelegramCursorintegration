@@ -276,3 +276,8 @@ ollama-config.json
 # Recommender scripts
 youtube-recommender*.ps1
 youtube-recommender*.txt
+
+# ============================================================
+# Sentinel Test Framework output
+# ============================================================
+.testreports/

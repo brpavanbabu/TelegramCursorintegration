@@ -7,7 +7,13 @@
     "start": "node telegram-cursor-bot.js",
     "install-bot": "node install.js",
     "setup": "node setup.js",
-    "test": "echo \"No tests specified yet\" && exit 0"
+    "test": "node testframework/cli.js all",
+    "test:unit": "node testframework/cli.js run",
+    "test:security": "node testframework/cli.js analyze --strict",
+    "test:fuzz": "node testframework/cli.js generate",
+    "test:requirements": "node testframework/cli.js matrix",
+    "test:discover": "node testframework/cli.js discover",
+    "test:report": "node testframework/cli.js all --json --junit --html"
   },
   "keywords": [
     "telegram",

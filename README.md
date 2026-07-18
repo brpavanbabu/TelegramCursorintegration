@@ -159,8 +159,31 @@ telegram-cursor-integration/
 ├── CONTRIBUTING.md             # Contribution guidelines
 ├── CREDITS.md                  # Credits to Pavan Babu
 ├── LICENSE                     # MIT License
-└── .gitignore                  # Git ignore rules
+├── .gitignore                  # Git ignore rules
+├── testframework/              # 🛡️ Sentinel — autonomous zero-dependency test framework
+├── tests/                      # Test suites (unit + end-to-end + auto-generated)
+├── requirements/               # Machine-readable requirements (auto-verified)
+└── testframework.config.json   # Test framework configuration
 ```
+
+## 🧪 Testing
+
+This project ships with **Sentinel**, a zero-dependency autonomous testing framework
+(see [`testframework/README.md`](testframework/README.md)). It tests the bot
+end-to-end on any OS — no Telegram account, no Windows, no robotjs build needed —
+by running the real bot inside a sandbox with virtual time.
+
+```bash
+npm test                    # full pipeline: security scan + tests + coverage + fuzzing + requirements matrix
+npm run test:unit           # test suites + coverage only
+npm run test:security       # static & security analysis (strict)
+npm run test:fuzz           # autonomous edge-case fuzzing
+npm run test:requirements   # requirements traceability matrix
+npm run test:report         # full pipeline + JSON/JUnit/HTML reports in .testreports/
+```
+
+The framework is fully portable — copy `testframework/` into **any** Node.js project
+and run `node testframework/cli.js init` to start testing it automatically.
 
 ## 🐛 Troubleshooting
 
