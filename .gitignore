@@ -279,3 +279,6 @@ youtube-recommender*.txt
 
 # PlugStack runtime state (pids, logs, generated compose files)
 .plugstack/
+
+# But keep example app frontends (PlugStack demos)
+!examples/**/index.html

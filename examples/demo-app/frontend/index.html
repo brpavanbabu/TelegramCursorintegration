@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PlugStack Demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 4rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.6rem; }
+    li.done { text-decoration: line-through; color: #888; }
+    #status { padding: .5rem .75rem; border-radius: 6px; background: #eef; display: inline-block; }
+  </style>
+</head>
+<body>
+  <h1>🔌 PlugStack Demo</h1>
+  <p>This static frontend and the API behind it were started by <strong>one command</strong>.</p>
+  <p id="status">Checking backend…</p>
+  <ul id="todos"></ul>
+  <script>
+    const api = `http://${location.hostname}:4000`;
+    fetch(`${api}/health`)
+      .then(r => r.json())
+      .then(h => { document.getElementById('status').textContent = `✅ Backend healthy (db: ${h.db})`; })
+      .catch(() => { document.getElementById('status').textContent = '❌ Backend unreachable'; });
+    fetch(`${api}/api/todos`)
+      .then(r => r.json())
+      .then(todos => {
+        const ul = document.getElementById('todos');
+        for (const t of todos) {
+          const li = document.createElement('li');
+          li.textContent = t.text;
+          if (t.done) li.className = 'done';
+          ul.appendChild(li);
+        }
+      });
+  </script>
+</body>
+</html>
