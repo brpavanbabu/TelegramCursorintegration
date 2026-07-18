@@ -1,0 +1,38 @@
+{
+  "name": "full-platform",
+  "description": "Everything: frontend + backend + Postgres + Redis + Kafka in one click (Docker for infra)",
+  "services": {
+    "db": {
+      "plugin": "postgres",
+      "config": { "user": "demo", "password": "demo", "database": "demo" }
+    },
+    "cache": {
+      "plugin": "redis"
+    },
+    "kafka": {
+      "plugin": "kafka"
+    },
+    "api": {
+      "plugin": "node-service",
+      "config": {
+        "cwd": "../examples/demo-app/backend",
+        "command": "node server.js",
+        "port": 4000,
+        "env": {
+          "DATABASE_URL": "postgres://${service.db.user}:${service.db.password}@localhost:${service.db.port}/${service.db.database}",
+          "REDIS_URL": "redis://localhost:${service.cache.port}",
+          "KAFKA_BROKERS": "localhost:${service.kafka.port}"
+        }
+      },
+      "dependsOn": ["db", "cache", "kafka"]
+    },
+    "web": {
+      "plugin": "static-frontend",
+      "config": {
+        "root": "../examples/demo-app/frontend",
+        "port": 8080
+      },
+      "dependsOn": ["api"]
+    }
+  }
+}

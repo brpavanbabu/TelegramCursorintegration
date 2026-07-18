@@ -1,0 +1,23 @@
+{
+  "name": "postgres",
+  "kind": "database",
+  "runner": "docker",
+  "description": "PostgreSQL database",
+  "defaults": {
+    "port": 5432,
+    "user": "app",
+    "password": "app",
+    "database": "app"
+  },
+  "docker": {
+    "image": "postgres:16-alpine",
+    "ports": ["${port}:5432"],
+    "environment": {
+      "POSTGRES_USER": "${user}",
+      "POSTGRES_PASSWORD": "${password}",
+      "POSTGRES_DB": "${database}"
+    },
+    "volumes": ["postgres_data:/var/lib/postgresql/data"]
+  },
+  "health": { "type": "tcp", "port": "${port}" }
+}

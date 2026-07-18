@@ -1,0 +1,15 @@
+{
+  "name": "mongodb",
+  "kind": "database",
+  "runner": "docker",
+  "description": "MongoDB document database",
+  "defaults": {
+    "port": 27017
+  },
+  "docker": {
+    "image": "mongo:7",
+    "ports": ["${port}:27017"],
+    "volumes": ["mongo_data:/data/db"]
+  },
+  "health": { "type": "tcp", "port": "${port}" }
+}

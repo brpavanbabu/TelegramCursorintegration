@@ -1,0 +1,15 @@
+{
+  "name": "redis",
+  "kind": "cache",
+  "runner": "docker",
+  "description": "Redis cache / message queue",
+  "defaults": {
+    "port": 6379
+  },
+  "docker": {
+    "image": "redis:7-alpine",
+    "ports": ["${port}:6379"],
+    "volumes": ["redis_data:/data"]
+  },
+  "health": { "type": "tcp", "port": "${port}" }
+}

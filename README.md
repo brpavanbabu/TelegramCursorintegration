@@ -4,6 +4,16 @@ Control your Cursor IDE directly from Telegram! This bot allows you to send comm
 
 **Created by: Pavan Babu**
 
+## 🔌 NEW: PlugStack — One-Click Pluggable App Stacks
+
+This repo now ships **PlugStack**, a pluggable platform where any component — frontend, backend, Kafka, Postgres, Redis, anything — is a plugin, and a whole app stack starts with **one command**:
+
+```bash
+npm run oneclick up fullstack-demo
+```
+
+See **[platform/README.md](platform/README.md)** for the full guide (writing plugins, composing stacks, Docker + local process runners).
+
 ## ✨ Features
 
 - 🎯 **Direct Cursor Control**: Send commands from Telegram and they execute automatically in Cursor

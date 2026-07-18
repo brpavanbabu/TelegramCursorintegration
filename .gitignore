@@ -276,3 +276,6 @@ ollama-config.json
 # Recommender scripts
 youtube-recommender*.ps1
 youtube-recommender*.txt
+
+# PlugStack runtime state (pids, logs, generated compose files)
+.plugstack/

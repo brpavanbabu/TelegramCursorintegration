@@ -1,0 +1,16 @@
+{
+  "name": "static-frontend",
+  "kind": "frontend",
+  "runner": "process",
+  "description": "Serves any static frontend folder (HTML/CSS/JS) — zero dependencies",
+  "defaults": {
+    "port": 8080,
+    "root": "."
+  },
+  "command": "node \"${pluginDir}/server.js\"",
+  "env": {
+    "PORT": "${port}",
+    "ROOT": "${stackDir}/${root}"
+  },
+  "health": { "type": "http", "port": "${port}", "path": "/" }
+}

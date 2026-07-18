@@ -1,0 +1,16 @@
+{
+  "name": "node-service",
+  "kind": "backend",
+  "runner": "process",
+  "description": "Runs any Node.js app (API, worker, bot) — point it at a folder and command",
+  "defaults": {
+    "port": 4000,
+    "cwd": ".",
+    "command": "node server.js"
+  },
+  "command": "${command}",
+  "env": {
+    "PORT": "${port}"
+  },
+  "health": { "type": "http", "port": "${port}", "path": "/health" }
+}
