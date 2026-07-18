@@ -29,6 +29,7 @@
   },
   "homepage": "https://github.com/brpavanbabu/telegram-cursor-integration#readme",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.112.0",
     "node-telegram-bot-api": "^0.66.0",
     "robotjs": "^0.6.0"
   },
