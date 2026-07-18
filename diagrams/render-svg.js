@@ -334,14 +334,12 @@ function drawTextBlock(l, design) {
   }
 
   if (m.contentRows.length && !isDiamond) {
-    y += nd.titleLineGap - titleLineH + titleLineH; // land exactly on titleLineGap after last title line
     y = l.y + topPad + m.titleLines.length * titleLineH + nd.titleLineGap;
     const lineH = lineHeightOf(typ.nodeLine.size);
     const bulletPrefix = nd.bullet + ' ';
     const bulletIndent = m.bulletIndent;
     const leftX = l.x + nd.paddingX;
     const isBulleted = l.node.type === 'process' || l.node.type === 'note';
-    let prevWasFirstOfNew = true;
     m.contentRows.forEach((row, idx) => {
       const baseline = y + typ.nodeLine.size * 0.85;
       if (isCylinder) {
@@ -489,23 +487,28 @@ function routeEdge(a, b, design) {
   }
 
   // Upward: b.row < a.row. Leave the side facing the target and route
-  // through the column gap so the line doesn't cut through intervening rows.
+  // through the gap immediately beside the *source* column. Using the gap
+  // next to `a` (rather than a midpoint between a's and b's columns) keeps
+  // the vertical run inside a strip that is always empty by construction -
+  // a midpoint can land inside an intervening column's node body.
   if (b.col < a.col) {
     const p1 = leftMiddle(a);
     const p2 = rightMiddle(b);
-    const channelX = round((b.x + b.width + a.x) / 2);
+    const channelX = round(a.x - gap / 2);
     return [p1, { x: channelX, y: p1.y }, { x: channelX, y: p2.y }, p2];
   }
   if (b.col > a.col) {
     const p1 = rightMiddle(a);
     const p2 = leftMiddle(b);
-    const channelX = round((a.x + a.width + b.x) / 2);
+    const channelX = round(a.x + a.width + gap / 2);
     return [p1, { x: channelX, y: p1.y }, { x: channelX, y: p2.y }, p2];
   }
-  // Same column, straight up through a side channel just left of the column.
-  const p1 = leftMiddle(a);
-  const p2 = leftMiddle(b);
-  const channelX = round(a.x - gap / 2);
+  // Same column: use the gap on whichever side stays on-canvas (the left
+  // gap doesn't exist for column 0).
+  const useRightGap = a.col === 0;
+  const p1 = useRightGap ? rightMiddle(a) : leftMiddle(a);
+  const p2 = useRightGap ? rightMiddle(b) : leftMiddle(b);
+  const channelX = useRightGap ? round(a.x + a.width + gap / 2) : round(a.x - gap / 2);
   return [p1, { x: channelX, y: p1.y }, { x: channelX, y: p2.y }, p2];
 }
 
@@ -526,7 +529,7 @@ function longestSegment(points) {
   return { a: points[best.i], b: points[best.i + 1] };
 }
 
-function drawEdge(edge, layout, design, markerIds) {
+function drawEdge(edge, layout, design, markerIds, canvasWidth) {
   const a = layout.get(edge.from);
   const b = layout.get(edge.to);
   if (!a || !b) return ''; // caller validates ids; be defensive at render time
@@ -549,12 +552,12 @@ function drawEdge(edge, layout, design, markerIds) {
 
   if (edge.label) {
     const seg = { a: points[0], b: points[1] };
-    const mx = (seg.a.x + seg.b.x) / 2;
     const my = (seg.a.y + seg.b.y) / 2;
     const labelColor = design.edge.labelColors[edge.labelColor || 'default'] || design.edge.labelColors.default;
     const size = design.typography.edgeLabel.size;
     const w = measureText(edge.label, size, true) + 10;
     const h = size + 8;
+    const mx = Math.min(Math.max((seg.a.x + seg.b.x) / 2, w / 2 + 4), canvasWidth - w / 2 - 4);
     out += tag('rect', {
       x: round(mx - w / 2),
       y: round(my - h / 2),
@@ -574,13 +577,30 @@ function drawEdge(edge, layout, design, markerIds) {
 
   if (edge.note) {
     const seg = longestSegment(points);
-    const mx = (seg.a.x + seg.b.x) / 2;
-    const my = (seg.a.y + seg.b.y) / 2;
+    const dx = seg.b.x - seg.a.x;
+    const dy = seg.b.y - seg.a.y;
+    const vertical = Math.abs(dy) > Math.abs(dx);
     const size = design.typography.nodeLine.size - 1;
-    const maxW = Math.max(120, Math.abs(seg.b.x - seg.a.x) - 20);
+    // A vertical channel is a thin strip - text can't run along it, so wrap
+    // to a fixed modest width and float the note beside the line instead of
+    // centered on top of it.
+    const maxW = vertical ? 150 : Math.max(120, Math.abs(dx) - 20);
     const noteLines = wrapPlain(edge.note, maxW, size, false);
     const boxW = Math.max(...noteLines.map((l) => measureText(l, size, false))) + 12;
     const boxH = noteLines.length * lineHeightOf(size) + 8;
+
+    let mx = (seg.a.x + seg.b.x) / 2;
+    let my = (seg.a.y + seg.b.y) / 2;
+    if (vertical) {
+      const lineX = seg.a.x;
+      const spaceRight = canvasWidth - (lineX + boxW / 2 + 10);
+      mx = spaceRight >= 0 ? lineX + boxW / 2 + 10 : lineX - boxW / 2 - 10;
+    } else {
+      my -= boxH / 2 + 6;
+    }
+    // Safety net: never let the box run off either canvas edge.
+    mx = Math.min(Math.max(mx, boxW / 2 + 4), canvasWidth - boxW / 2 - 4);
+
     out += tag('rect', {
       x: round(mx - boxW / 2),
       y: round(my - boxH / 2),
@@ -1135,7 +1155,7 @@ function renderDiagram(spec, options) {
 
   // Edges under nodes so box fills cleanly cover the anchor stubs.
   for (const edge of spec.edges || []) {
-    body += drawEdge(edge, layoutResult.layout, design, markers.ids);
+    body += drawEdge(edge, layoutResult.layout, design, markers.ids, canvasWidth);
   }
 
   for (const node of spec.nodes) {
