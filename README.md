@@ -161,6 +161,37 @@ the generated SVG.
 See [diagrams/DESIGN.md](diagrams/DESIGN.md) for the architecture, spec
 schema, and design-system details.
 
+### ☁️ Diagram Studio — deploy the generator to Vercel
+
+The repo doubles as a Vercel project: a web app where you **describe a flow,
+get the diagram, then refine it conversationally** ("add a timeout branch
+after step 3") — each refinement is a minimal spec edit, so the layout stays
+stable instead of being re-rolled. Diagrams share via **zero-database links**:
+the spec travels compressed inside the URL fragment, so every diagram is a
+permalink anyone can open, fork, and refine.
+
+**Deploy:**
+
+1. Import the repo at [vercel.com/new](https://vercel.com/new) (or run `npx vercel`).
+2. Set the `ANTHROPIC_API_KEY` environment variable in the Vercel project.
+3. Optionally set `DIAGRAM_STUDIO_TOKEN` to require an access token —
+   recommended for a public URL, since generation spends your API credits.
+   Leave it unset for a private deployment.
+
+`vercel.json` already handles the quirks: dependencies install with
+`--ignore-scripts` (so the desktop-only `robotjs` native build doesn't run in
+the cloud), and the diagram module files are bundled with the function. The
+Telegram bot itself is not deployed — it stays on your desktop; only the
+diagram generator goes to the cloud.
+
+**Endpoints** (`POST /api/diagram`):
+
+| Body | Result |
+|------|--------|
+| `{"action":"generate","description":"..."}` | `{spec, svg}` via Claude Sonnet 5 |
+| `{"action":"refine","spec":{...},"instruction":"..."}` | minimally-edited `{spec, svg}` |
+| `{"action":"render","spec":{...}}` | `{spec, svg}` — deterministic, no LLM, free |
+
 ## 🔧 Configuration
 
 The `install.js` script creates a `config.json` file with:

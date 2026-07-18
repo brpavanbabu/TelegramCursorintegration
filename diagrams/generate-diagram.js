@@ -41,6 +41,16 @@ Design rules:
 
 Return ONLY the DiagramSpec JSON.`;
 
+const REFINE_SYSTEM_PROMPT = `You are an expert systems architect editing an existing DiagramSpec JSON for an automatic diagram renderer.
+
+You will receive the current DiagramSpec and a change request. Apply the change request with the SMALLEST possible edit:
+- Preserve existing node ids, grid positions (col/row), titles, lines, edges, actors, and panels that the request does not touch.
+- Keep the layout stable: only move nodes the request asks you to move, or when a new node forces a neighbor to shift. Never place two nodes on the same (col,row); keep col in 0-5.
+- When adding nodes, follow the house style: numbered process steps, decision diamonds for branches (Yes/No edge labels with labelColor success/error), datastore cylinders for stores (dashed muted edges), categories system=blue / external=orange / success=green / error=red / reversal=purple / info=yellow notes.
+- Renumber steps only if the request inserts or removes a step in the main sequence.
+
+Return ONLY the full updated DiagramSpec JSON.`;
+
 /**
  * Load the DiagramSpec JSON Schema from spec-schema.json, stripping the
  * top-level keys the structured-output API doesn't want.
@@ -149,7 +159,35 @@ async function generateSpec(description, options = {}) {
   if (!description || !description.trim()) {
     throw new Error('generateSpec: "description" must be a non-empty string.');
   }
+  return requestSpec(SYSTEM_PROMPT, [{ role: 'user', content: description }], options);
+}
 
+/**
+ * Call Claude to apply a natural-language change request to an existing
+ * DiagramSpec with minimal edits, returning the full updated spec.
+ *
+ * @param {object} spec - current DiagramSpec
+ * @param {string} instruction - e.g. "add a timeout step after validation"
+ * @param {{ apiKey?: string, model?: string }} [options]
+ * @returns {Promise<object>} the updated, validated DiagramSpec
+ */
+async function refineSpec(spec, instruction, options = {}) {
+  if (!instruction || !instruction.trim()) {
+    throw new Error('refineSpec: "instruction" must be a non-empty string.');
+  }
+  validateSpec(spec);
+
+  const content =
+    `Current DiagramSpec JSON:\n\n${JSON.stringify(spec)}\n\n` +
+    `Change request:\n${instruction}\n\n` +
+    'Apply the change request and return the full updated DiagramSpec JSON.';
+  return requestSpec(REFINE_SYSTEM_PROMPT, [{ role: 'user', content }], options);
+}
+
+/**
+ * Shared structured-output request: system + messages -> validated DiagramSpec.
+ */
+async function requestSpec(system, messages, options = {}) {
   const apiKey = resolveApiKey(options);
   const model = resolveModel(options);
   const schema = loadSchema();
@@ -163,9 +201,9 @@ async function generateSpec(description, options = {}) {
     const stream = client.messages.stream({
       model,
       max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
+      system,
       output_config: { format: { type: 'json_schema', schema } },
-      messages: [{ role: 'user', content: description }],
+      messages,
     });
     message = await stream.finalMessage();
   } catch (err) {
@@ -365,4 +403,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { generateSpec, generateDiagram };
+module.exports = { generateSpec, refineSpec, generateDiagram };

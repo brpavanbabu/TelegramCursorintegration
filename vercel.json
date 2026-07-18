@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm install --ignore-scripts",
+  "functions": {
+    "api/diagram.js": {
+      "maxDuration": 300,
+      "includeFiles": "diagrams/**"
+    }
+  }
+}

@@ -176,12 +176,11 @@ setup-moltbot-browser.ps1
 test-moltbot-browser.ps1
 install-playwright-scraper.ps1
 
-# Website/API projects (separate)
-index.html
+# Website/API projects (separate) — root-level strays only;
+# /api, /public and /vercel.json are the Diagram Studio Vercel app and ARE tracked
+/index.html
 update_website.py
 update-website-*.ps1
-api/
-vercel.json
 
 # Test/Sample Python apps
 add_numbers.py
