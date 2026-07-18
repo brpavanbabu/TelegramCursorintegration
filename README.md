@@ -14,6 +14,12 @@ npm run oneclick up fullstack-demo
 
 See **[platform/README.md](platform/README.md)** for the full guide (writing plugins, composing stacks, Docker + local process runners).
 
+**And the killer feature — deploy from your phone:** the **[PlugStack Deploy Bot](platform/bot/README.md)** lets you deploy/stop/monitor whole stacks from Telegram with password auth, confirmation buttons, and an audit trail:
+
+```bash
+TELEGRAM_BOT_TOKEN="123:abc" PLUGSTACK_BOT_PASSWORD="secret" npm run deploy-bot
+```
+
 ## ✨ Features
 
 - 🎯 **Direct Cursor Control**: Send commands from Telegram and they execute automatically in Cursor

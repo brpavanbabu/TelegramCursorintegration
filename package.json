@@ -8,7 +8,8 @@
     "install-bot": "node install.js",
     "setup": "node setup.js",
     "oneclick": "node platform/cli.js",
-    "test": "node platform/test/smoke.js"
+    "deploy-bot": "node platform/bot/bot.js",
+    "test": "node platform/test/smoke.js && node platform/test/bot.test.js"
   },
   "keywords": [
     "telegram",

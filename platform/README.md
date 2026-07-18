@@ -159,9 +159,17 @@ Everything lives in `.plugstack/` (gitignored): `state.json` (pids), `logs/<stac
 npm test   # engine smoke tests: interpolation, resolver, registry, compose generation
 ```
 
+## 📱 Deploy from Telegram
+
+The killer feature: **[PlugStack Deploy Bot](bot/README.md)** lets you deploy and manage stacks from your phone with password auth, confirmation buttons, and an audit trail:
+
+```bash
+TELEGRAM_BOT_TOKEN="123:abc" PLUGSTACK_BOT_PASSWORD="secret" npm run deploy-bot
+```
+
 ## Roadmap ideas
 
 - `plugstack watch` — restart a service on file change
-- Telegram bot integration: `/deploy fullstack-demo` from your phone via the existing bot
-- Remote targets: generate systemd units / k8s manifests from the same stack file
+- Remote targets: SSH deploy to a server, generate systemd units / k8s manifests from the same stack file
 - Plugin marketplace: install plugins from git URLs
+- Multi-user roles for the deploy bot (viewer / deployer / admin)
