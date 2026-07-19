@@ -39,6 +39,7 @@ const { runFiles } = require('./core/runner');
 const { CoverageCollector } = require('./core/coverage');
 const analyzer = require('./analysis/static');
 const autogen = require('./autogen/generator');
+const adapters = require('./adapters');
 const reqEngine = require('./requirements/engine');
 const consoleReporter = require('./reporters/console');
 const jsonReporter = require('./reporters/json');
@@ -80,6 +81,10 @@ const DEFAULT_CONFIG = {
     excludeFiles: [],
   },
   productFiles: [],
+  // Per-language adapters: true = force on, false = off, undefined = auto-detect
+  languages: {},
+  python: {},
+  jvm: {},
 };
 
 function loadConfig(root) {
@@ -137,7 +142,40 @@ function discoverProductFiles(root, config) {
 /* ---------------- pipeline stages ---------------- */
 
 async function stageAnalyze(root, config) {
-  return analyzer.scan(root, config.analyze);
+  const analysis = analyzer.scan(root, config.analyze);
+  const langs = adapters.detectLanguages(root, config);
+  const adapterResults = [];
+  for (const lang of langs) {
+    try {
+      adapterResults.push(adapters.ADAPTERS[lang].analyze(root, config[lang] || {}));
+    } catch (err) {
+      console.error(`  (${lang} analysis failed: ${err.message})`);
+    }
+  }
+  adapters.mergeAnalysis(analysis, adapterResults);
+  analysis.languages = ['js', ...langs];
+  return analysis;
+}
+
+/** Run non-JS test suites via language adapters and merge into the report. */
+function stageExternalTests(root, config, testReport) {
+  const notes = [];
+  for (const lang of adapters.detectLanguages(root, config)) {
+    const adapter = adapters.ADAPTERS[lang];
+    if (typeof adapter.runTests !== 'function') continue;
+    try {
+      const res = adapter.runTests(root, config[lang] || {});
+      if (res.tests.length > 0) {
+        adapters.mergeTests(testReport, res.tests);
+        notes.push({ lang, runner: res.runner, tests: res.tests.length, coverage: res.coverage || null });
+      } else if (res.skippedReason) {
+        notes.push({ lang, skippedReason: res.skippedReason });
+      }
+    } catch (err) {
+      notes.push({ lang, skippedReason: `adapter crashed: ${err.message}` });
+    }
+  }
+  return notes;
 }
 
 async function stageTests(root, config, args, coverage) {
@@ -152,12 +190,26 @@ async function stageTests(root, config, args, coverage) {
 }
 
 async function stageFuzz(root, config, args) {
-  return autogen.fuzzProject(root, {
+  const fuzz = await autogen.fuzzProject(root, {
     seed: Number(args.seed || config.fuzz.seed),
     iterations: Number(config.fuzz.iterations),
     targets: config.fuzz.targets && config.fuzz.targets.length ? config.fuzz.targets : undefined,
     excludeDirs: config.analyze.excludeDirs,
   });
+  for (const lang of adapters.detectLanguages(root, config)) {
+    const adapter = adapters.ADAPTERS[lang];
+    if (typeof adapter.fuzz !== 'function') continue;
+    try {
+      adapters.mergeFuzz(fuzz, adapter.fuzz(root, {
+        seed: Number(args.seed || config.fuzz.seed),
+        iterations: Number(config.fuzz.iterations),
+        ...(config[lang] || {}),
+      }));
+    } catch (err) {
+      fuzz.skipped.push({ file: `(${lang})`, reason: `fuzz adapter crashed: ${err.message}` });
+    }
+  }
+  return fuzz;
 }
 
 async function stageMatrix(root, config, testResults, analysis) {
@@ -203,6 +255,30 @@ function computeVerdict({ testReport, matrix, analysis, fuzz }, strict) {
   return { pass, reasons };
 }
 
+function reportExternalNotes(notes, coverageSummary) {
+  for (const note of notes) {
+    if (note.skippedReason) {
+      console.log(`  [${note.lang}] tests skipped: ${note.skippedReason}`);
+    } else {
+      console.log(`  [${note.lang}] ${note.tests} test(s) executed via ${note.runner}`);
+      if (note.coverage) {
+        console.log(`  [${note.lang}] line coverage (JaCoCo): ${note.coverage.linePct}% (${note.coverage.linesCovered}/${note.coverage.linesCovered + note.coverage.linesMissed} lines)`);
+        if (coverageSummary) {
+          coverageSummary.files.push({
+            file: `(${note.lang} via JaCoCo)`,
+            bytePct: note.coverage.linePct,
+            functionsTotal: 0,
+            functionsCovered: 0,
+            functionPct: 0,
+            loaded: true,
+            uncoveredLines: [],
+          });
+        }
+      }
+    }
+  }
+}
+
 function writeReports(root, args, fullReport) {
   const outDir = path.resolve(root, args['out-dir'] || '.testreports');
   const targets = {
@@ -230,6 +306,8 @@ async function cmdAll(root, config, args) {
     const v8 = await coverage.stop();
     coverageSummary = coverage.summarize(v8, discoverProductFiles(root, config));
   }
+  const externalNotes = stageExternalTests(root, config, testReport);
+  reportExternalNotes(externalNotes, coverageSummary);
 
   const fuzz = await stageFuzz(root, config, args);
   const matrix = await stageMatrix(root, config, testReport.tests, analysis);
@@ -259,12 +337,14 @@ async function cmdAll(root, config, args) {
 async function cmdRun(root, config, args) {
   const coverage = args.coverage === false || args['no-coverage'] ? null : new CoverageCollector(root, { exclude: config.coverage.exclude.map((p) => new RegExp(p)) });
   const { report: testReport, files } = await stageTests(root, config, args, coverage);
-  if (files.length === 0) console.log('No test files found in ' + path.resolve(root, config.testDir));
+  if (files.length === 0) console.log('No JS test files found in ' + path.resolve(root, config.testDir));
   let coverageSummary = null;
   if (coverage) {
     const v8 = await coverage.stop();
     coverageSummary = coverage.summarize(v8, discoverProductFiles(root, config));
   }
+  const externalNotes = stageExternalTests(root, config, testReport);
+  reportExternalNotes(externalNotes, coverageSummary);
   consoleReporter.reportTests(testReport, { verbose: !!args.verbose });
   if (coverageSummary) consoleReporter.reportCoverage(coverageSummary);
   writeReports(root, args, { project: path.basename(root), generatedAt: new Date().toISOString(), tests: testReport, coverage: coverageSummary });
@@ -296,6 +376,7 @@ async function cmdGenerate(root, config, args) {
 async function cmdMatrix(root, config, args) {
   const analysis = await stageAnalyze(root, config);
   const { report: testReport } = await stageTests(root, config, args, null);
+  stageExternalTests(root, config, testReport);
   const matrix = await stageMatrix(root, config, testReport.tests, analysis);
   if (!matrix) {
     console.error(`No requirements file at ${config.requirements}. Run "init" to create one.`);
@@ -307,6 +388,8 @@ async function cmdMatrix(root, config, args) {
 
 async function cmdDiscover(root, config) {
   console.log(`\nProject root: ${root}`);
+  const langs = adapters.detectLanguages(root, config);
+  console.log(`Languages detected: js${langs.length ? ', ' + langs.join(', ') : ''}`);
   const tests = findTestFiles(root, config);
   console.log(`\nTest files (${tests.length}):`);
   for (const t of tests) console.log('  - ' + path.relative(root, t));

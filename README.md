@@ -182,8 +182,12 @@ npm run test:requirements   # requirements traceability matrix
 npm run test:report         # full pipeline + JSON/JUnit/HTML reports in .testreports/
 ```
 
-The framework is fully portable — copy `testframework/` into **any** Node.js project
-and run `node testframework/cli.js init` to start testing it automatically.
+The framework is fully portable and **polyglot** — copy `testframework/` into any
+project and run `node testframework/cli.js init`. It auto-detects and tests
+**JavaScript, Python, Java and Kotlin** code: Python gets native security analysis,
+autonomous fuzzing and pytest/unittest execution; Java/Kotlin projects run through
+their own Gradle/Maven build with JUnit results and JaCoCo coverage ingested into
+the same unified report and requirements matrix.
 
 ## 🐛 Troubleshooting
 

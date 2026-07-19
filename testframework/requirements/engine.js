@@ -136,6 +136,22 @@ function runCheck(check, ctx) {
         }
         return { desc: describeCheck((check.files || []).join(', ')), passed: failures.length === 0, detail: failures.length ? `syntax errors in: ${failures.join(', ')}` : 'all files parse' };
       }
+      case 'command_succeeds': {
+        const result = spawnSync(check.command, {
+          shell: true,
+          cwd: check.cwd ? path.resolve(root, check.cwd) : root,
+          encoding: 'utf8',
+          timeout: check.timeoutMs || 120000,
+        });
+        const ok = result.status === 0;
+        return {
+          desc: describeCheck(check.command),
+          passed: ok,
+          detail: ok
+            ? 'exit code 0'
+            : `exit ${result.status}: ${String(result.stderr || result.stdout || '').split('\n').filter(Boolean).slice(-2).join(' | ').slice(0, 200)}`,
+        };
+      }
       case 'no_findings': {
         const findings = (ctx.analysis ? ctx.analysis.findings : []).filter((f) => {
           if (check.rule && f.rule !== check.rule) return false;

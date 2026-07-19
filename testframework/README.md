@@ -21,6 +21,45 @@ Everything runs on plain Node.js ≥ 14. **No npm packages. No network. No nativ
 
 ---
 
+## Polyglot: JavaScript, Python, Java, Kotlin
+
+Sentinel's orchestration layers (requirements matrix, security analysis, fuzz
+strategy, reporting, verdict) are language-agnostic. Language adapters plug
+each ecosystem into the same pipeline — results from every language merge into
+**one report, one traceability matrix, one verdict**:
+
+| Language | Analysis | Fuzzing | Test execution | Coverage |
+|---|---|---|---|---|
+| JavaScript | ✅ native | ✅ native (sandbox) | ✅ native runner | ✅ V8 in-process |
+| Python | ✅ rules + `py_compile` | ✅ stdlib harness (AST-screened safe imports) | ✅ pytest (JUnit XML) or stdlib unittest | via pytest-cov if configured |
+| Java | ✅ rules (`.java`) | via JUnit ecosystem | ✅ Gradle/Maven → JUnit XML ingested | ✅ JaCoCo XML ingested |
+| Kotlin | ✅ rules (`.kt`) | via JUnit ecosystem | ✅ same Gradle/Maven flow | ✅ JaCoCo XML ingested |
+
+Languages are **auto-detected** (`discover` shows what was found); force on/off
+per language with `"languages": { "python": false }` in the config.
+
+**Cross-language requirement linking**: tag any test name with `[SEC-002]`
+(or a `_SEC002` suffix in snake_case/camelCase names) and it links into the
+traceability matrix exactly like a JS test tagged with `reqs: ['SEC-002']`:
+
+```python
+def test_lockout_after_three_failures_SEC002(self): ...   # Python
+```
+```java
+@Test public void locksAfterThreeFailedAttempts_SEC002() { ... }  // Java
+```
+```kotlin
+@Test fun `locks after 3 attempts [SEC-002]`() { ... }            // Kotlin
+```
+
+The Python fuzzer only auto-imports modules that pass an AST safety screen
+(stdlib-only imports, no top-level side effects) — the same safety rule the
+JS auto-discovery applies. JVM tests always run through the project's own
+build tool (`./gradlew` → `./mvnw` → `gradle` → `mvn`), so Sentinel never
+fights the build system.
+
+---
+
 ## Quick start — in ANY project
 
 ```bash
