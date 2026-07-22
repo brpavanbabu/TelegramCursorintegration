@@ -209,6 +209,39 @@ function runTests(root, options = {}) {
   const testFiles = walkPy(root).filter((f) => /(^|[\\/])test[^\\/]*\.py$|_test\.py$/.test(f));
   if (testFiles.length === 0) return { tests: [], skippedReason: null };
 
+  // Dependency-free coverage path (opt-in): run the suite under sys.settrace.
+  // Independent of pytest, so Python line coverage works with zero extra deps.
+  if (options.coverage) {
+    const productFiles = (options.productFiles || walkPy(root).map((f) => path.relative(root, f)))
+      .filter((rel) => {
+        const base = path.basename(rel);
+        return !base.startsWith('test') && base !== 'conftest.py' && base !== 'setup.py' && base !== '__init__.py';
+      });
+    const cfgFile = path.join(os.tmpdir(), `sentinel-pycov-${process.pid}-${Math.floor(Math.random() * 1e6)}.json`);
+    fs.writeFileSync(cfgFile, JSON.stringify({ root, start_dir: root, product_files: productFiles }));
+    try {
+      const res = spawnSync(python, [path.join(__dirname, 'py', 'coverage_runner.py'), cfgFile], {
+        encoding: 'utf8',
+        cwd: root,
+        timeout: options.timeoutMs || 300000,
+        maxBuffer: 32 * 1024 * 1024,
+      });
+      if (res.stdout) {
+        const parsed = JSON.parse(res.stdout);
+        return {
+          tests: mapUnittestRecords(parsed.tests),
+          runner: 'unittest+trace',
+          coverage: parsed.coverage
+            ? { linePct: parsed.coverage.overall.linePct, linesCovered: parsed.coverage.overall.linesCovered, linesMissed: parsed.coverage.overall.linesTotal - parsed.coverage.overall.linesCovered, files: parsed.coverage.files }
+            : null,
+        };
+      }
+      return { tests: [], skippedReason: `coverage runner failed: ${String(res.stderr || '').split('\n')[0]}` };
+    } finally {
+      try { fs.unlinkSync(cfgFile); } catch (e) { /* best effort */ }
+    }
+  }
+
   if (options.usePytest !== false && hasPytest(python)) {
     const outDir = path.join(root, '.testreports');
     fs.mkdirSync(outDir, { recursive: true });
@@ -235,7 +268,11 @@ function runTests(root, options = {}) {
     return { tests: [], skippedReason: `unittest runner failed: ${String(result.stderr || '').split('\n')[0]}` };
   }
   const parsed = JSON.parse(result.stdout);
-  const tests = parsed.tests.map((t) => ({
+  return { tests: mapUnittestRecords(parsed.tests), runner: 'unittest' };
+}
+
+function mapUnittestRecords(records) {
+  return records.map((t) => ({
     suite: `python > ${t.classname || '(suite)'}`,
     name: t.name,
     fullName: `python > ${t.classname ? t.classname + ' > ' : ''}${t.name}`,
@@ -246,7 +283,6 @@ function runTests(root, options = {}) {
     reqs: extractReqTags(t.name, t.classname),
     file: null,
   }));
-  return { tests, runner: 'unittest' };
 }
 
 module.exports = { detect, analyze, fuzz, runTests, PY_RULES, pythonBinary };

@@ -34,12 +34,40 @@ class ExitError extends Error {
 }
 
 function createFakeProcess(overrides = {}) {
-  const fake = Object.create(process);
-  fake.exit = (code = 0) => {
-    throw new ExitError(code);
+  // Deliberately NOT `Object.create(process)`: prototype-inheriting the real
+  // process lets sandboxed code reach the genuine process.exit/kill/abort via
+  // Object.getPrototypeOf(process). We build a flat object exposing only safe,
+  // read-only-ish fields so there is no prototype chain back to the real one.
+  const fake = {
+    platform: process.platform,
+    arch: process.arch,
+    version: process.version,
+    versions: { ...process.versions },
+    env: { ...process.env },
+    argv: [...process.argv],
+    argv0: process.argv0,
+    pid: process.pid,
+    cwd: () => process.cwd(),
+    nextTick: (cb, ...args) => queueMicrotask(() => cb(...args)),
+    hrtime: process.hrtime ? process.hrtime.bind(process) : undefined,
+    stdout: { write: () => true },
+    stderr: { write: () => true },
+    exit: (code = 0) => {
+      throw new ExitError(code);
+    },
+    // No-op lifecycle registration so sandboxed code can't attach real handlers.
+    on: () => fake,
+    once: () => fake,
+    off: () => fake,
+    removeListener: () => fake,
+    emit: () => false,
+    kill: () => {
+      throw new ExitError('kill');
+    },
+    abort: () => {
+      throw new ExitError('abort');
+    },
   };
-  fake.on = () => fake; // don't register real process listeners from sandboxed code
-  fake.once = () => fake;
   Object.assign(fake, overrides);
   return fake;
 }

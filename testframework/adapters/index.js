@@ -11,8 +11,14 @@
 
 const python = require('./python');
 const jvm = require('./jvm');
+const contract = require('./contract');
 
 const ADAPTERS = { python, jvm };
+
+// Fail fast at load time if an adapter doesn't expose the required surface.
+for (const [name, adapter] of Object.entries(ADAPTERS)) {
+  contract.validateAdapterShape(adapter, name);
+}
 
 /**
  * @returns {string[]} adapter names active for this project
@@ -26,6 +32,21 @@ function detectLanguages(root, config = {}) {
     if (setting === true || adapter.detect(root)) active.push(name);
   }
   return active;
+}
+
+/**
+ * Invoke an adapter capability and validate its result against the contract
+ * BEFORE it reaches the merge/report layer. A contract violation is raised
+ * with the adapter name and the exact field at fault.
+ */
+function runCapability(name, capability, root, options) {
+  const adapter = ADAPTERS[name];
+  if (!adapter || typeof adapter[capability] !== 'function') return null;
+  const result = adapter[capability](root, options || {});
+  if (capability === 'analyze') return contract.validateAnalysis(result, name);
+  if (capability === 'runTests') return contract.validateTestRun(result, name);
+  if (capability === 'fuzz') return contract.validateFuzz(result, name);
+  return result;
 }
 
 /** Merge adapter findings into a Sentinel analysis result (mutates). */
@@ -68,4 +89,4 @@ function mergeFuzz(fuzz, adapterFuzz) {
   return fuzz;
 }
 
-module.exports = { ADAPTERS, detectLanguages, mergeAnalysis, mergeTests, mergeFuzz, python, jvm };
+module.exports = { ADAPTERS, detectLanguages, runCapability, mergeAnalysis, mergeTests, mergeFuzz, contract, python, jvm };

@@ -30,10 +30,15 @@ each ecosystem into the same pipeline — results from every language merge into
 
 | Language | Analysis | Fuzzing | Test execution | Coverage |
 |---|---|---|---|---|
-| JavaScript | ✅ native | ✅ native (sandbox) | ✅ native runner | ✅ V8 in-process |
-| Python | ✅ rules + `py_compile` | ✅ stdlib harness (AST-screened safe imports) | ✅ pytest (JUnit XML) or stdlib unittest | via pytest-cov if configured |
-| Java | ✅ rules (`.java`) | via JUnit ecosystem | ✅ Gradle/Maven → JUnit XML ingested | ✅ JaCoCo XML ingested |
-| Kotlin | ✅ rules (`.kt`) | via JUnit ecosystem | ✅ same Gradle/Maven flow | ✅ JaCoCo XML ingested |
+| JavaScript | ✅ native | ✅ native (sandbox) | ✅ native runner | ✅ V8 in-process (byte-weighted) |
+| Python | ✅ rules + `py_compile` | ✅ stdlib harness (AST-screened safe imports) | ✅ pytest (JUnit XML) or stdlib unittest | ✅ dependency-free `sys.settrace` (opt-in: `"python": { "coverage": true }`) |
+| Java | ✅ rules (`.java`) | ⚠️ not implemented — relies on hand-written JUnit tests | ✅ Gradle/Maven → JUnit XML ingested | ✅ JaCoCo XML ingested |
+| Kotlin | ✅ rules (`.kt`) | ⚠️ not implemented — relies on hand-written JUnit tests | ✅ same Gradle/Maven flow | ✅ JaCoCo XML ingested |
+
+> **Honest scope:** JVM *fuzzing* is not implemented (it would need a reflection-based
+> JUnit generator or a Java agent) — the JVM path runs your existing tests and analyzes
+> sources. Every other cell above is implemented and covered by the framework's own
+> test suite.
 
 Languages are **auto-detected** (`discover` shows what was found); force on/off
 per language with `"languages": { "python": false }` in the config.
@@ -51,6 +56,12 @@ def test_lockout_after_three_failures_SEC002(self): ...   # Python
 ```kotlin
 @Test fun `locks after 3 attempts [SEC-002]`() { ... }            // Kotlin
 ```
+
+**Adding a language** = writing one adapter (`adapters/<lang>.js`) that exposes
+`detect(root)` plus any of `analyze` / `fuzz` / `runTests`, returning Sentinel's
+shared record shapes. The contract is written down and **enforced at runtime** in
+`adapters/contract.js` — a malformed adapter result fails loudly at the merge
+boundary (with the exact field at fault) instead of silently mis-rendering.
 
 The Python fuzzer only auto-imports modules that pass an AST safety screen
 (stdlib-only imports, no top-level side effects) — the same safety rule the
@@ -126,6 +137,15 @@ describe('checkout', { reqs: ['PAY-001'] }, () => {      // ← link to requirem
 ```
 
 ### Testing the untestable (sandbox loader)
+
+> **What the sandbox is — and isn't.** `loadSandboxed` is a **controllability**
+> tool, not a security boundary. It runs in the same V8 realm as the framework
+> (via `vm.compileFunction`), so it shares `Object.prototype` with the host and
+> is **not** safe to point at untrusted code. Its job is to make your *own*
+> modules testable by swapping their `require`/`fs`/`process`/timers/`Date`.
+> The fake `process` is a flat object (no prototype chain back to the real one),
+> so `process.exit()` throws a catchable `ExitError` instead of killing the run.
+
 
 ```js
 const { exports, console: logs } = loadSandboxed('./server.js', {

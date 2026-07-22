@@ -147,7 +147,8 @@ async function stageAnalyze(root, config) {
   const adapterResults = [];
   for (const lang of langs) {
     try {
-      adapterResults.push(adapters.ADAPTERS[lang].analyze(root, config[lang] || {}));
+      const res = adapters.runCapability(lang, 'analyze', root, config[lang] || {});
+      if (res) adapterResults.push(res);
     } catch (err) {
       console.error(`  (${lang} analysis failed: ${err.message})`);
     }
@@ -164,7 +165,7 @@ function stageExternalTests(root, config, testReport) {
     const adapter = adapters.ADAPTERS[lang];
     if (typeof adapter.runTests !== 'function') continue;
     try {
-      const res = adapter.runTests(root, config[lang] || {});
+      const res = adapters.runCapability(lang, 'runTests', root, config[lang] || {});
       if (res.tests.length > 0) {
         adapters.mergeTests(testReport, res.tests);
         notes.push({ lang, runner: res.runner, tests: res.tests.length, coverage: res.coverage || null });
@@ -200,7 +201,7 @@ async function stageFuzz(root, config, args) {
     const adapter = adapters.ADAPTERS[lang];
     if (typeof adapter.fuzz !== 'function') continue;
     try {
-      adapters.mergeFuzz(fuzz, adapter.fuzz(root, {
+      adapters.mergeFuzz(fuzz, adapters.runCapability(lang, 'fuzz', root, {
         seed: Number(args.seed || config.fuzz.seed),
         iterations: Number(config.fuzz.iterations),
         ...(config[lang] || {}),
@@ -262,10 +263,14 @@ function reportExternalNotes(notes, coverageSummary) {
     } else {
       console.log(`  [${note.lang}] ${note.tests} test(s) executed via ${note.runner}`);
       if (note.coverage) {
-        console.log(`  [${note.lang}] line coverage (JaCoCo): ${note.coverage.linePct}% (${note.coverage.linesCovered}/${note.coverage.linesCovered + note.coverage.linesMissed} lines)`);
+        const source = note.lang === 'jvm' ? 'JaCoCo' : note.runner || 'line trace';
+        const totalLines = note.coverage.linesCovered + note.coverage.linesMissed;
+        console.log(`  [${note.lang}] line coverage (${source}): ${note.coverage.linePct}% (${note.coverage.linesCovered}/${totalLines} lines)`);
         if (coverageSummary) {
+          // Line-based coverage from another toolchain: shown as its own row,
+          // with no byte counts so it never distorts the byte-weighted JS aggregate.
           coverageSummary.files.push({
-            file: `(${note.lang} via JaCoCo)`,
+            file: `(${note.lang} line coverage via ${source})`,
             bytePct: note.coverage.linePct,
             functionsTotal: 0,
             functionsCovered: 0,

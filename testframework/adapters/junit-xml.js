@@ -18,8 +18,18 @@ const fs = require('fs');
 
 const ENTITIES = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'" };
 
+/** Replace CDATA sections with their raw (already-unescaped) contents. */
+function stripCdata(s) {
+  return String(s).replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (m, inner) => inner);
+}
+
 function decode(s) {
-  return String(s)
+  // CDATA content is literal — pull it out before entity-decoding the rest so
+  // real Gradle/Surefire stack traces (wrapped in CDATA) survive intact.
+  const hadCdata = /<!\[CDATA\[/.test(s);
+  const withCdata = stripCdata(s);
+  if (hadCdata) return withCdata; // CDATA payload is already raw text
+  return withCdata
     .replace(/&#x([0-9a-fA-F]+);/g, (m, hex) => String.fromCodePoint(parseInt(hex, 16)))
     .replace(/&#(\d+);/g, (m, dec) => String.fromCodePoint(parseInt(dec, 10)))
     .replace(/&(amp|lt|gt|quot|apos);/g, (m) => ENTITIES[m]);

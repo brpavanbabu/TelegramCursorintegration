@@ -75,8 +75,16 @@ function deepEqual(a, b, seen = new Map()) {
   const bIsSet = b instanceof Set;
   if (aIsSet || bIsSet) {
     if (!(aIsSet && bIsSet) || a.size !== b.size) return false;
+    // Reuse the SAME `seen` map (do not fork it) so structures that cycle
+    // through a Set are still detected as visited and don't recurse forever.
     const bItems = [...b];
-    return [...a].every((item) => bItems.some((other) => deepEqual(item, other, new Map(seen))));
+    const usedB = new Set();
+    return [...a].every((item) => {
+      const matchIdx = bItems.findIndex((other, i) => !usedB.has(i) && deepEqual(item, other, seen));
+      if (matchIdx === -1) return false;
+      usedB.add(matchIdx);
+      return true;
+    });
   }
 
   const aIsMap = a instanceof Map;
@@ -84,7 +92,7 @@ function deepEqual(a, b, seen = new Map()) {
   if (aIsMap || bIsMap) {
     if (!(aIsMap && bIsMap) || a.size !== b.size) return false;
     for (const [k, v] of a) {
-      if (!b.has(k) || !deepEqual(v, b.get(k), new Map(seen))) return false;
+      if (!b.has(k) || !deepEqual(v, b.get(k), seen)) return false;
     }
     return true;
   }

@@ -8,6 +8,7 @@
 
 const path = require('path');
 const { describe, it, expect, mock, loadSandboxed, ExitError, AssertionError } = require('../testframework');
+const { aggregateCoverage } = require('../testframework/core/coverage');
 
 describe('sentinel: assertion engine', () => {
   it('toBe / toEqual distinguish identity from deep equality', () => {
@@ -27,6 +28,24 @@ describe('sentinel: assertion engine', () => {
     expect(Buffer.from('ab')).toEqual(Buffer.from('ab'));
     expect(/abc/g).toEqual(/abc/g);
     expect({ a: 1 }).not.toEqual({ a: 1, b: 2 });
+  });
+
+  it('Set equality is true multiset matching (regression: no double-matching one element)', () => {
+    // Both size 2; the naive `.some()` matcher wrongly let both {x:1} items
+    // match the single {x:1} in the other set. Must be NOT equal.
+    expect(new Set([{ x: 1 }, { x: 1 }])).not.toEqual(new Set([{ x: 1 }, { y: 9 }]));
+    expect(new Set([{ x: 1 }, { x: 1 }])).toEqual(new Set([{ x: 1 }, { x: 1 }]));
+    expect(new Set([{ p: 1 }, { q: 2 }])).toEqual(new Set([{ q: 2 }, { p: 1 }]));
+  });
+
+  it('deep equality terminates on cyclic structures, including cycles through a Set', () => {
+    const a = {}; a.self = a;
+    const b = {}; b.self = b;
+    expect(a).toEqual(b);
+
+    const s1 = new Set(); const n1 = { tag: 1 }; n1.back = s1; s1.add(n1);
+    const s2 = new Set(); const n2 = { tag: 1 }; n2.back = s2; s2.add(n2);
+    expect(s1).toEqual(s2);
   });
 
   it('failed assertions throw AssertionError with a useful message', () => {
@@ -83,6 +102,31 @@ describe('sentinel: mock engine', () => {
   });
 });
 
+describe('sentinel: coverage aggregation', () => {
+  it('overall byte coverage is byte-weighted, not an unweighted mean (regression)', () => {
+    // 4000-byte file at 30% + 40-byte file at 100%.
+    // Unweighted mean would be (30+100)/2 = 65% and overstate coverage.
+    // Byte-weighted truth = (1200+40)/(4000+40) ≈ 30.7%.
+    const files = [
+      { coveredBytes: 1200, totalBytes: 4000, bytePct: 30, functionsTotal: 0, functionsCovered: 0 },
+      { coveredBytes: 40, totalBytes: 40, bytePct: 100, functionsTotal: 0, functionsCovered: 0 },
+    ];
+    const overall = aggregateCoverage(files);
+    expect(overall.bytePct).toBe(30.7);
+    expect(overall.bytePct).toBeLessThan(65);
+  });
+
+  it('ignores rows without byte counts (e.g. ingested from another language)', () => {
+    const files = [
+      { coveredBytes: 50, totalBytes: 100, functionsTotal: 2, functionsCovered: 1 },
+      { bytePct: 88, functionsTotal: 0, functionsCovered: 0 }, // JaCoCo-style row, no byte counts
+    ];
+    const overall = aggregateCoverage(files);
+    expect(overall.bytePct).toBe(50);
+    expect(overall.functionPct).toBe(50);
+  });
+});
+
 describe('sentinel: sandbox loader', () => {
   const FIXTURE = path.join(__dirname, '..', 'password-security.js');
 
@@ -91,6 +135,27 @@ describe('sentinel: sandbox loader', () => {
     const second = loadSandboxed(FIXTURE).exports;
     expect(typeof first.isAuthenticated).toBe('function');
     expect(first).not.toBe(second);
+  });
+
+  it('fake process does not expose the real process.exit via its prototype (regression)', () => {
+    const os = require('os');
+    const fs = require('fs');
+    const tmp = path.join(os.tmpdir(), `sentinel-proto-${process.pid}.js`);
+    // Sandboxed code tries to escape the fake process by walking the prototype
+    // chain. The fake must be a flat object with no chain back to real process.
+    fs.writeFileSync(
+      tmp,
+      'const proto = Object.getPrototypeOf(process);' +
+        'module.exports = { escaped: proto && typeof proto.exit === "function", ' +
+        'protoIsObject: proto === Object.prototype || proto === null };'
+    );
+    try {
+      const { exports } = loadSandboxed(tmp);
+      expect(exports.escaped).toBe(false);
+      expect(exports.protoIsObject).toBe(true);
+    } finally {
+      fs.unlinkSync(tmp);
+    }
   });
 
   it('process.exit inside sandboxed code throws catchable ExitError', () => {

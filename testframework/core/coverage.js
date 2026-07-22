@@ -164,6 +164,8 @@ class CoverageCollector {
       files.push({
         file: path.relative(this.root, filePath),
         bytePct: entry ? Math.round((coveredBytes / Math.max(1, totalBytes)) * 1000) / 10 : 0,
+        coveredBytes,
+        totalBytes,
         functionsTotal: fnTotal,
         functionsCovered: fnCovered,
         functionPct: fnTotal > 0 ? Math.round((fnCovered / fnTotal) * 1000) / 10 : entry ? 100 : 0,
@@ -179,26 +181,39 @@ class CoverageCollector {
     }
 
     files.sort((a, b) => a.file.localeCompare(b.file));
-    const totals = files.reduce(
-      (acc, f) => {
-        acc.fnTotal += f.functionsTotal;
-        acc.fnCovered += f.functionsCovered;
-        acc.byteSum += f.bytePct;
-        return acc;
-      },
-      { fnTotal: 0, fnCovered: 0, byteSum: 0 }
-    );
 
     return {
       available: this.available,
       error: this.error || null,
       files,
-      overall: {
-        bytePct: files.length ? Math.round((totals.byteSum / files.length) * 10) / 10 : 0,
-        functionPct: totals.fnTotal ? Math.round((totals.fnCovered / totals.fnTotal) * 1000) / 10 : 0,
-      },
+      overall: aggregateCoverage(files),
     };
   }
+}
+
+/**
+ * Aggregate per-file coverage into an overall figure.
+ *
+ * Byte coverage is byte-WEIGHTED — sum(covered)/sum(total) — NOT an unweighted
+ * mean of per-file percentages. A tiny 100%-covered file must not mask a large
+ * barely-covered one. Rows without byte counts (e.g. coverage ingested from
+ * another language's tool) are excluded from the byte aggregate.
+ */
+function aggregateCoverage(files) {
+  const totals = files.reduce(
+    (acc, f) => {
+      acc.fnTotal += f.functionsTotal || 0;
+      acc.fnCovered += f.functionsCovered || 0;
+      acc.coveredBytes += f.coveredBytes || 0;
+      acc.totalBytes += f.totalBytes || 0;
+      return acc;
+    },
+    { fnTotal: 0, fnCovered: 0, coveredBytes: 0, totalBytes: 0 }
+  );
+  return {
+    bytePct: totals.totalBytes ? Math.round((totals.coveredBytes / totals.totalBytes) * 1000) / 10 : 0,
+    functionPct: totals.fnTotal ? Math.round((totals.fnCovered / totals.fnTotal) * 1000) / 10 : 0,
+  };
 }
 
 /**
@@ -245,4 +260,4 @@ function approximateUncoveredLines(source, entry) {
   return [...lines].sort((a, b) => a - b);
 }
 
-module.exports = { CoverageCollector };
+module.exports = { CoverageCollector, aggregateCoverage };

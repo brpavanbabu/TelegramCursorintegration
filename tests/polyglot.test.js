@@ -14,6 +14,7 @@ const { describe, it, expect, beforeAll, afterAll } = require('../testframework'
 const { parseJUnitXml, extractReqTags } = require('../testframework/adapters/junit-xml');
 const pythonAdapter = require('../testframework/adapters/python');
 const jvmAdapter = require('../testframework/adapters/jvm');
+const contract = require('../testframework/adapters/contract');
 
 const HAS_PYTHON = !!pythonAdapter.pythonBinary();
 
@@ -49,6 +50,52 @@ stack line 2</failure>
     expect(extractReqTags('locks out [SEC-002] properly')).toContain('SEC-002');
     expect(extractReqTags('test_lockout_after_attempts_SEC002')).toContain('SEC-002');
     expect(extractReqTags('nothing here')).toHaveLength(0);
+  });
+
+  it('preserves CDATA-wrapped failure stack traces (real Gradle/Surefire output)', () => {
+    const xml = `<testsuite name="T">
+  <testcase classname="T" name="boom" time="0.01">
+    <failure message="expected 1" type="AssertionError"><![CDATA[
+java.lang.AssertionError: expected 1 but was 2
+  at T.boom(T.java:14)
+  if (a < b && c > d) { throw new AssertionError(); }
+]]></failure>
+  </testcase>
+</testsuite>`;
+    const [t] = parseJUnitXml(xml);
+    expect(t.status).toBe('failed');
+    // The raw < > & inside CDATA must survive un-mangled.
+    expect(t.error.stack).toContain('a < b && c > d');
+    expect(t.error.stack).toContain('at T.boom(T.java:14)');
+  });
+});
+
+describe('polyglot: adapter contract enforcement', () => {
+  it('accepts well-formed adapter results', () => {
+    expect(() =>
+      contract.validateAnalysis({ language: 'x', scannedFiles: 1, findings: [
+        { rule: 'r', severity: 'high', file: 'a.x', line: 1, message: 'bad' },
+      ] }, 'x')
+    ).not.toThrow();
+    expect(() =>
+      contract.validateTestRun({ tests: [
+        { name: 'n', fullName: 'f > n', status: 'passed', duration: 1, reqs: [], error: null },
+      ] }, 'x')
+    ).not.toThrow();
+  });
+
+  it('rejects malformed results with a precise message (fail loud, not silent)', () => {
+    expect(() => contract.validateAnalysis({ language: 'x', scannedFiles: 1, findings: [
+      { rule: 'r', severity: 'critical', file: 'a', line: 1, message: 'm' }, // bad severity
+    ] }, 'x')).toThrow('severity');
+    expect(() => contract.validateTestRun({ tests: [
+      { name: 'n', fullName: 'f', status: 'green', duration: 1, reqs: [], error: null }, // bad status
+    ] }, 'x')).toThrow('status');
+    expect(() => contract.validateFuzz({ reports: 'nope', skipped: [] }, 'x')).toThrow('reports');
+  });
+
+  it('rejects an adapter missing detect()', () => {
+    expect(() => contract.validateAdapterShape({ analyze: () => {} }, 'broken')).toThrow('detect');
   });
 });
 
@@ -168,5 +215,18 @@ describe('polyglot: Python adapter', () => {
     const normal = res.tests.find((t) => t.name.includes('test_divide_normal'));
     expect(normal.status).toBe('passed');
     expect(normal.reqs).toContain('CALC-001');
+  }, { timeout: 120000 });
+
+  it('collects dependency-free Python line coverage via sys.settrace', () => {
+    if (!HAS_PYTHON) return;
+    const res = pythonAdapter.runTests(dir, { coverage: true, productFiles: ['calc.py'], timeoutMs: 120000 });
+    expect(res.runner).toBe('unittest+trace');
+    expect(res.coverage).toBeDefined();
+    expect(res.coverage.linePct).toBeGreaterThan(0);
+    expect(res.coverage.linePct).toBeLessThanOrEqual(100);
+    // divide() is exercised by the tests; its body line must be covered,
+    // and greet()/add() (untested) must show as missed lines.
+    expect(res.coverage.linesCovered).toBeGreaterThan(0);
+    expect(res.coverage.linesMissed).toBeGreaterThan(0);
   }, { timeout: 120000 });
 });
