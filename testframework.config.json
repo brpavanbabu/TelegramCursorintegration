@@ -1,0 +1,22 @@
+{
+  "testDir": "tests",
+  "requirements": "requirements/requirements.json",
+  "coverage": {
+    "exclude": ["^testframework/", "^tests/", "^requirements/"]
+  },
+  "fuzz": {
+    "seed": 42,
+    "iterations": 120,
+    "targets": []
+  },
+  "analyze": {
+    "excludeDirs": [],
+    "excludeFiles": []
+  },
+  "productFiles": [
+    "telegram-cursor-bot.js",
+    "password-security.js",
+    "setup.js",
+    "install.js"
+  ]
+}
